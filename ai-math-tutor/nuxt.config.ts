@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { VueMcp } from 'vite-plugin-vue-mcp'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -20,5 +22,19 @@ export default defineNuxtConfig({
       callback: '/auth/callback',
       exclude: ['/']
     }
+  },
+  // Vite configuration with Vue MCP plugin
+  vite: {
+    plugins: [
+      VueMcp({
+        // Auto-update Cursor MCP config
+        updateCursorMcpJson: {
+          enabled: true,
+          serverName: 'vue-app-mcp'
+        },
+        // Print MCP server URL in console
+        printUrl: true
+      })
+    ]
   }
 })

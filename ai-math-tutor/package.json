@@ -15,5 +15,10 @@
     "nuxt": "^4.2.0",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@playwright/mcp": "github:microsoft/playwright-mcp",
+    "chrome-devtools-mcp": "^0.9.0",
+    "vite-plugin-vue-mcp": "^0.3.2"
   }
 }
