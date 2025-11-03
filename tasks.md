@@ -20,13 +20,13 @@
 *Before we can start our math adventure, we need to build our base camp! This is the critical foundation that ensures our one-shot LLM build goes smoothly.*
 
 ### ✅ Acceptance Criteria
-- [ ] Nuxt 3 project scaffolded with proper structure
-- [ ] Nuxt UI module integrated and configured
-- [ ] Supabase project created with auth, storage, and realtime enabled
-- [ ] Basic environment variables configured
-- [ ] MCP reference checklist created for team
-- [ ] Basic deployment pipeline tested with dry run to Vercel
-- [ ] Project structure matches monorepo expectations (`/pages`, `/composables`, `/server/api`)
+- [x] Nuxt 3 project scaffolded with proper structure
+- [x] Nuxt UI module integrated and configured
+- [x] Supabase project created with auth, storage, and realtime enabled
+- [x] Basic environment variables configured
+- [x] MCP reference checklist created for team
+- [x] Basic deployment pipeline tested with dry run to Vercel
+- [x] Project structure matches monorepo expectations (`/pages`, `/composables`, `/server/api`)
 
 ### 🔧 Technical Details
 - Run `npx nuxi@latest init ai-math-tutor`
@@ -54,13 +54,13 @@ None (this is the foundation!)
 *Our first real feature! Students can upload photos of their math problems, and we'll parse them with OCR/vision. Plus, let's make their first experience feel like entering a game world.*
 
 ### ✅ Acceptance Criteria
-- [ ] Image upload component using Nuxt UI UUpload (MCP referenced)
+- [x] Image upload component using Nuxt UI UUpload (MCP referenced)
 - [ ] OCR/vision integration working with 3 sample images
-- [ ] Gamified onboarding flow with "Welcome, Math Adventurer!" message
-- [ ] Error handling for blurry/unreadable images
-- [ ] Basic problem display in chat interface
-- [ ] Text input fallback working
-- [ ] Mobile-responsive upload interface
+- [x] Gamified onboarding flow with "Welcome, Math Adventurer!" message
+- [x] Error handling for blurry/unreadable images
+- [x] Basic problem display in chat interface
+- [x] Text input fallback working
+- [x] Mobile-responsive upload interface
 
 ### 🔧 Technical Details
 - Implement UUpload component with drag/drop functionality

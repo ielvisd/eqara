@@ -4,34 +4,29 @@ import { VueMcp } from 'vite-plugin-vue-mcp'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/ui', '@nuxtjs/supabase'],
-  // Nuxt UI configuration per MCP guidelines
+  modules: ['@nuxt/ui'],
+  // Nuxt UI configuration
   ui: {
-    // Enable auto-imports for better DX
     global: true,
-    // Configure theme and icons
     icons: ['heroicons', 'lucide']
   },
-  // Supabase configuration per MCP guidelines
-  supabase: {
-    // Service key for server-side operations
-    serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    // Redirect options for auth
-    redirectOptions: {
-      login: '/auth/login',
-      callback: '/auth/callback',
-      exclude: ['/']
+  css: ['~/assets/css/main.css'],
+
+  // Disable SSR temporarily to test
+  ssr: false,
+  // Runtime config for Supabase
+  runtimeConfig: {
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY
     }
   },
   // Vite configuration with Vue MCP plugin
   vite: {
     plugins: [
       VueMcp({
-        // Auto-update Cursor MCP config
-        updateCursorMcpJson: {
-          enabled: true,
-          serverName: 'vue-app-mcp'
-        },
+        // Disable auto-update to avoid permission issues
+        updateCursorMcpJson: false,
         // Print MCP server URL in console
         printUrl: true
       })

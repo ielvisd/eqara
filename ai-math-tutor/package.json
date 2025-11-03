@@ -1,7 +1,7 @@
 {
   "name": "ai-math-tutor",
   "type": "module",
-  "private": true,
+    "private": true,
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@nuxt/ui": "^2.18.7",
-    "@nuxtjs/supabase": "^1.4.2",
-    "nuxt": "^4.2.0",
+    "@supabase/supabase-js": "^2.75.0",
+    "nuxt": "^4.1.3",
     "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@playwright/mcp": "github:microsoft/playwright-mcp",
