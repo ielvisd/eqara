@@ -29,15 +29,15 @@
         </p>
 
         <div class="flex flex-wrap justify-center gap-4 mb-8">
-          <UBadge variant="subtle" color="purple" class="px-3 py-1">
+          <UBadge variant="subtle" color="primary" class="px-3 py-1">
             <UIcon name="i-lucide-camera" class="size-4 mr-1" />
             Image Upload
           </UBadge>
-          <UBadge variant="subtle" color="blue" class="px-3 py-1">
+          <UBadge variant="subtle" color="primary" class="px-3 py-1">
             <UIcon name="i-lucide-message-circle" class="size-4 mr-1" />
             Chat Interface
           </UBadge>
-          <UBadge variant="subtle" color="green" class="px-3 py-1">
+          <UBadge variant="subtle" color="success" class="px-3 py-1">
             <UIcon name="i-lucide-trophy" class="size-4 mr-1" />
             XP Rewards
           </UBadge>
@@ -398,11 +398,10 @@
 import { ref, watch, computed } from 'vue'
 
 // useToast is auto-imported by Nuxt UI module
-// @ts-expect-error - Auto-imported composable from @nuxt/ui
 const toast = useToast()
 
-// File upload state
-const files = ref<File | File[] | null>(null)
+// File upload state - UFileUpload can return File, File[], or null
+const files = ref<File | File[] | null>(null) as any
 
 // Chat state
 const textProblem = ref('')
@@ -424,9 +423,10 @@ const hasFile = computed(() => {
 })
 
 // Get the first file for processing
-const getFile = computed(() => {
+const getFile = computed((): File | null => {
   if (!files.value) return null
-  return Array.isArray(files.value) ? files.value[0] : files.value
+  const file = Array.isArray(files.value) ? files.value[0] : files.value
+  return file instanceof File ? file : null
 })
 
 // Convert messages to UChatMessages format
@@ -434,9 +434,9 @@ const chatMessages = computed(() => {
   return messages.value.map(msg => ({
     id: msg.id,
     role: msg.role,
-    parts: [{ type: 'text', text: msg.content }],
+    parts: [{ type: 'text' as const, text: msg.content }],
     createdAt: msg.timestamp
-  }))
+  })) as any
 })
 
 // Watch files for validation
@@ -444,6 +444,7 @@ watch(files, (newFile) => {
   if (!newFile) return
   
   const file = Array.isArray(newFile) ? newFile[0] : newFile
+  if (!file || !(file instanceof File)) return
   
   // Check file size (5MB limit)
   if (file.size > 5 * 1024 * 1024) {
@@ -471,39 +472,78 @@ watch(files, (newFile) => {
   }
 })
 
+// Convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (!result || typeof result !== 'string') {
+        reject(new Error('Failed to read file'))
+        return
+      }
+      // Remove data:image/...;base64, prefix if present
+      const parts = result.split(',')
+      const base64 = parts.length > 1 ? parts[1] : result
+      if (!base64) {
+        reject(new Error('Failed to extract base64 data'))
+        return
+      }
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 // Process uploaded image
 const processImage = async () => {
-  if (!hasFile.value) return
+  const file = getFile.value
+  if (!hasFile.value || !file) return
 
   isProcessing.value = true
   chatStatus.value = 'submitted'
 
-  // Add user message
+  // Add user message showing image is being processed
   const userMessage = {
     id: `user-${Date.now()}`,
     role: 'user' as const,
-    content: 'Processing uploaded image...',
+    content: `📷 Analyzing image: ${file.name}`,
     timestamp: new Date()
   }
   messages.value.push(userMessage)
 
   try {
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
     chatStatus.value = 'streaming'
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // Convert image to base64
+    const imageBase64 = await fileToBase64(file)
 
-    // Add assistant response
+    // Call vision API endpoint
+    const response = await $fetch<{
+      success: boolean
+      extractedProblem?: string
+      provider?: string
+      timestamp?: string
+      message?: string
+    }>('/api/vision', {
+      method: 'POST',
+      body: {
+        imageBase64: imageBase64
+      }
+    })
+
+    if (!response.success || !response.extractedProblem) {
+      throw new Error(response.message || 'Failed to extract problem from image')
+    }
+
+    const extractedProblem = response.extractedProblem
+
+    // Add assistant response with extracted problem
     const assistantMessage = {
       id: `assistant-${Date.now()}`,
       role: 'assistant' as const,
-      content: 'Found the equation: 2x + 3 = 7',
-      steps: [
-        'Subtract 3 from both sides: 2x = 4',
-        'Divide both sides by 2: x = 2',
-        'Solution: x = 2'
-      ],
+      content: `✨ I found this problem in your image:\n\n**${extractedProblem}**\n\nWould you like help solving it? I can guide you through it step by step! 🎓`,
       timestamp: new Date()
     }
     messages.value.push(assistantMessage)
@@ -511,16 +551,24 @@ const processImage = async () => {
     chatStatus.value = 'ready'
     
     toast.add({
-      title: 'Problem solved!',
-      description: 'XP Earned: +15',
+      title: 'Image processed! 🎉',
+      description: `Problem extracted successfully! XP Earned: +10`,
       color: 'success',
       icon: 'i-lucide-check-circle'
     })
-  } catch (error) {
+  } catch (error: any) {
     chatStatus.value = 'error'
+    
+    // Remove the user message if processing failed
+    messages.value.pop()
+    
+    const errorMessage = error.data?.message || error.message || 'An error occurred while processing your image'
+    
     toast.add({
       title: 'Processing failed',
-      description: 'An error occurred while processing your image',
+      description: errorMessage.includes('API') 
+        ? 'Please configure OPENAI_API_KEY or GROK_API_KEY in your .env file'
+        : 'Please try again with a clearer, well-lit image',
       color: 'error',
       icon: 'i-lucide-alert-circle'
     })

@@ -9,7 +9,12 @@ SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
-# LLM Configuration (Grok API)
+# Vision/OCR API Configuration (Primary)
+# Get from OpenAI API dashboard at https://platform.openai.com/api-keys
+# Used for image OCR and vision processing
+OPENAI_API_KEY=your-openai-api-key-here
+
+# LLM Configuration (Grok API - Primary LLM)
 # Get from xAI API dashboard at https://console.x.ai/
 GROK_API_KEY=your-grok-api-key-here
 
@@ -31,11 +36,17 @@ NODE_ENV=development
    - Go to [supabase.com](https://supabase.com) and create a new project
    - Copy the Project URL and anon/service_role keys from Settings > API
 
-2. **Grok API Setup:**
+2. **OpenAI API Setup (For Vision/OCR):**
+   - Visit [platform.openai.com](https://platform.openai.com/api-keys) to get your API key
+   - This is used for image OCR and vision processing (GPT-4o with vision)
+   - **Required for image upload feature**
+
+3. **Grok API Setup:**
    - Visit [console.x.ai](https://console.x.ai/) to get your API key
    - This will be our primary LLM for fun, engaging responses
+   - Can also be used as fallback for vision if OpenAI is not configured
 
-3. **Anthropic API Setup (Optional):**
+4. **Anthropic API Setup (Optional):**
    - Visit [console.anthropic.com](https://console.anthropic.com/) for Claude API access
    - Used as fallback for complex mathematical reasoning
 

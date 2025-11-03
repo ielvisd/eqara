@@ -14,8 +14,13 @@ export default defineNuxtConfig({
 
   // Disable SSR temporarily to test
   ssr: false,
-  // Runtime config for Supabase
+  // Runtime config for Supabase and API keys
   runtimeConfig: {
+    // Private keys (server-side only)
+    grokApiKey: process.env.GROK_API_KEY,
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    // Public config (client-side accessible)
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY

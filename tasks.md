@@ -55,7 +55,7 @@ None (this is the foundation!)
 
 ### ✅ Acceptance Criteria
 - [x] Image upload component using Nuxt UI UUpload (MCP referenced)
-- [ ] OCR/vision integration working with 3 sample images
+- [x] OCR/vision integration working with 3 sample images (API endpoint created, ready for testing)
 - [x] Gamified onboarding flow with "Welcome, Math Adventurer!" message
 - [x] Error handling for blurry/unreadable images
 - [x] Basic problem display in chat interface
