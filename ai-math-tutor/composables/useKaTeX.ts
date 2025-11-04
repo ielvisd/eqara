@@ -241,31 +241,30 @@ export const useKaTeX = () => {
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i]
       
-      // Check for operation mentions (from both user and AI)
-      if (msg.role === 'assistant' || msg.role === 'user') {
-        // AI patterns: "add 2 to both sides", "subtract 2 from both sides"
-        const addMatch = msg.content.match(/(?:add|adding|added)\s+(\d+)\s+to\s+both\s+sides?/i)
-        const subtractMatch = msg.content.match(/(?:subtract|subtracting|subtracted)\s+(\d+)\s+from\s+both\s+sides?/i)
-        const multiplyMatch = msg.content.match(/(?:multiply|multiplying|multiplied)\s+both\s+sides?\s+by\s+(\d+)/i)
-        const divideMatch = msg.content.match(/(?:divide|dividing|divided)\s+both\s+sides?\s+by\s+(\d+)/i)
-        
-        // User patterns: "subtract 2 from each side", "divide both sides by 2"
+      // Check for operation mentions - ONLY from user messages
+      // AI messages might reference operations in questions, which would overwrite the correct operation
+      if (msg.role === 'user') {
+        // User patterns: "subtract 2 from each side", "divide both sides by 2", "divide by 2", etc.
         const userSubtractMatch = msg.content.match(/(?:subtract|subtracting)\s+(\d+)\s+from\s+(?:each|both)\s+side/i)
         const userAddMatch = msg.content.match(/(?:add|adding)\s+(\d+)\s+to\s+(?:each|both)\s+side/i)
-        const userDivideMatch = msg.content.match(/(?:divide|dividing)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+        // Try full pattern first, then simpler pattern
+        const userDivideMatchFull = msg.content.match(/(?:divide|dividing)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+        const userDivideMatchSimple = msg.content.match(/(?:divide|dividing)\s+by\s+(\d+)/i) ||
+                                     msg.content.match(/(?:divide|dividing)\s+(\d+)/i) // "divide 2" or "dividing 2"
+        const userDivideMatch = userDivideMatchFull || userDivideMatchSimple
         const userMultiplyMatch = msg.content.match(/(?:multiply|multiplying)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
         
-        if (addMatch || userAddMatch) {
-          const value = addMatch?.[1] || userAddMatch?.[1]
+        if (userAddMatch) {
+          const value = userAddMatch[1]
           lastOperation = `+ ${value} to both sides`
-        } else if (subtractMatch || userSubtractMatch) {
-          const value = subtractMatch?.[1] || userSubtractMatch?.[1]
+        } else if (userSubtractMatch) {
+          const value = userSubtractMatch[1]
           lastOperation = `- ${value} from both sides`
-        } else if (multiplyMatch || userMultiplyMatch) {
-          const value = multiplyMatch?.[1] || userMultiplyMatch?.[1]
+        } else if (userMultiplyMatch) {
+          const value = userMultiplyMatch[1]
           lastOperation = `× ${value} to both sides`
-        } else if (divideMatch || userDivideMatch) {
-          const value = divideMatch?.[1] || userDivideMatch?.[1]
+        } else if (userDivideMatch) {
+          const value = userDivideMatch[1]
           lastOperation = `÷ ${value} from both sides`
         }
       }
