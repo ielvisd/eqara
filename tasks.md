@@ -56,7 +56,7 @@ None (this is the foundation!)
 ### ✅ Acceptance Criteria
 - [x] Image upload component using Nuxt UI UUpload (MCP referenced)
 - [x] OCR/vision integration working with 3 sample images (API endpoint created, ready for testing)
-- [x] Gamified onboarding flow with "Welcome, Math Adventurer!" message
+- [ ] Gamified onboarding flow with "Welcome, Math Adventurer!" message
 - [x] Error handling for blurry/unreadable images
 - [x] Basic problem display in chat interface
 - [x] Text input fallback working
@@ -115,51 +115,57 @@ PR #1 (Foundation Quest)
 
 ---
 
-## 🧠 PR #4: Wisdom Quest - Socratic Logic & Problem Solving
+## 🧠 PR #4: Wisdom Quest - Socratic Logic & Problem Solving (KG-Integrated)
 **Branch:** `feat/socratic-engine`
 
 ### 📖 Description
-*Now we're getting serious! The AI learns to ask the right questions, provide hints when stuck, and validate student progress across different math problem types.*
+*Now we're getting serious! The AI learns to ask the right questions, provide hints when stuck, and validate student progress across different math problem types—all integrated with the Knowledge Graph system for prerequisite-aware instruction.*
 
 ### ✅ Acceptance Criteria
 - [ ] Adaptive questioning system (open questions first)
-- [ ] Hint system that activates after 2 stuck turns
-- [ ] Support for 5+ problem types (arithmetic, algebra, geometry, word problems, multi-step)
-- [ ] Context awareness across conversation turns
-- [ ] Light level-up mechanics based on progress
-- [ ] Encouraging, playful responses
-- [ ] Problem type detection and appropriate guidance
+- [ ] KG-integrated hint system that activates after 2 stuck turns (hints based on prerequisite knowledge gaps)
+- [ ] Support for 5+ CCAT problem types (arithmetic, algebra, proportions, word problems, multi-step)
+- [ ] Context awareness with Knowledge Graph state (mastery levels, prerequisites, topic difficulty)
+- [ ] Remediation flow: lesson failed twice → prerequisite review (via KG) → consolidation break → re-attempt
+- [ ] Mastery-based question selection (adjust difficulty based on mastery level)
+- [ ] Encouraging, playful responses with KG awareness
+- [ ] Problem type detection and appropriate guidance based on topic prerequisites
 
 ### 🔧 Technical Details
-- Implement prompt engineering for different problem types
-- Create hint escalation logic
-- Add problem type classification
-- Enhance context management
-- Implement adaptive difficulty
-- Test with various math scenarios
+- Integrate Socratic prompts with Knowledge Graph queries
+- Implement prerequisite-aware hint generation
+- Create remediation logic that identifies prerequisite topics via KG
+- Enhance context management to include mastery state and KG structure
+- Implement mastery-based adaptive difficulty
+- Test with various CCAT math scenarios
+- Add KG context to LLM prompts (current topic, prerequisites, mastery level)
 
 ### ⏱️ Estimated Time
-8-10 hours
+10-12 hours
 
 ### 🔗 Dependencies
-PR #3 (Chat Quest)
+PR #3 (Chat Quest), PR #8 (Knowledge Graph Foundation), PR #9 (Mastery Learning System)
 
 ### 🎮 Gamification Angle
-*"Nice move—you're questing like a pro!" - celebrating student insights*
+*"Nice move—you're questing like a pro!" - celebrating student insights while ensuring they master prerequisites before advancing*
 
 ---
 
-## 🎨 PR #5: Beauty Quest - UI Polish & Math Rendering
+## 🎨 PR #5: Beauty Quest - UI Polish & Math Rendering (KG-Enhanced)
 **Branch:** `feat/ui-rendering`
 
 ### 📖 Description
-*Making it beautiful and functional! KaTeX math rendering, smooth animations, and a polished interface that makes learning math feel like playing a game.*
+*Making it beautiful and functional! KaTeX math rendering, smooth animations, and a polished interface that makes learning math feel like playing a game—now with Knowledge Graph visualization and mastery tracking.*
 
 ### ✅ Acceptance Criteria
 - [ ] KaTeX math rendering working in chat bubbles
 - [ ] Responsive design for mobile and desktop
 - [ ] Smooth animations and transitions (60fps)
-- [ ] Sidebar for history and achievements
+- [ ] Sidebar for history, achievements, and mastery tracking
+- [ ] Knowledge Graph visualization (topic hierarchy with progress indicators)
+- [ ] Mastery progress indicators (per topic, knowledge frontier position)
+- [ ] Quiz interface for retrieval practice
+- [ ] Topic navigation based on Knowledge Graph structure
 - [ ] Accessibility compliance (WCAG 2.1 AA)
 - [ ] Loading states and error handling
 - [ ] Playwright E2E tests passing
@@ -168,18 +174,22 @@ PR #3 (Chat Quest)
 - Integrate KaTeX via Nuxt UI UMarkdown
 - Implement Vue transitions for animations
 - Create responsive layout with USidebar
+- Add Knowledge Graph visualization component (topic tree with mastery indicators)
+- Implement mastery progress bars/indicators per topic
+- Create quiz UI component for retrieval practice
+- Add topic navigation UI based on KG structure
 - Add ARIA labels and accessibility features
-- Write Playwright tests for core flows
+- Write Playwright tests for core flows including KG navigation
 - Optimize performance for smooth animations
 
 ### ⏱️ Estimated Time
-6-8 hours
+10-12 hours
 
 ### 🔗 Dependencies
-PR #4 (Wisdom Quest), PR #2 (Vision Quest)
+PR #4 (Wisdom Quest), PR #2 (Vision Quest), PR #8 (Knowledge Graph Foundation), PR #9 (Mastery Learning System), PR #13 (Retrieval Practice System)
 
 ### 🎮 Gamification Angle
-*Sparkly animations and smooth transitions make every interaction feel rewarding*
+*Sparkly animations and smooth transitions make every interaction feel rewarding, with clear visual feedback on mastery progress and knowledge frontier advancement*
 
 ---
 
@@ -217,27 +227,233 @@ PR #5 (Beauty Quest)
 
 ---
 
-## 🌟 PR #7: Bonus Quest - Stretch Features
+## 🗺️ PR #8: Knowledge Graph Foundation Quest
+**Branch:** `feat/knowledge-graph`
+
+### 📖 Description
+*Building the foundation of our mastery learning system! The Knowledge Graph organizes all math topics with their prerequisite and encompassing relationships, enabling algorithmic decision-making for individualized instruction.*
+
+### ✅ Acceptance Criteria
+- [ ] Database schema for topics, prerequisites, and encompassings
+- [ ] Initial CCAT topic structure (arithmetic foundations, algebra fundamentals, proportions & ratios, word problems)
+- [ ] API endpoints for KG queries (get prerequisites, get encompassings, get frontier topics)
+- [ ] Topic hierarchy visualization component
+- [ ] Knowledge Frontier calculation algorithm
+- [ ] CCAT topic seeding script/data
+
+### 🔧 Technical Details
+- Create Supabase tables: `topics`, `topic_prerequisites`, `topic_encompassings`
+- Implement SQL queries for prerequisite/encompassing traversal
+- Create composable `useKnowledgeGraph.ts` for frontend KG access
+- Build API endpoints: `/api/knowledge-graph/prerequisites`, `/api/knowledge-graph/frontier`
+- Create initial CCAT topic data structure
+- Implement frontier calculation (topics where all prerequisites are mastered)
+- Add topic hierarchy visualization component
+
+### ⏱️ Estimated Time
+8-10 hours
+
+### 🔗 Dependencies
+PR #1 (Foundation Quest)
+
+### 🎮 Gamification Angle
+*The map of our math adventure—showing students exactly where they are and where they can go next!*
+
+---
+
+## 📊 PR #9: Mastery Learning System Quest
+**Branch:** `feat/mastery-learning`
+
+### 📖 Description
+*Implementing true mastery learning at a fully granular level! Track mastery per topic, enforce 100% mastery before advancement, and visualize progress through the Knowledge Graph.*
+
+### ✅ Acceptance Criteria
+- [ ] Mastery tracking per topic (mastery_level, last_practiced, next_review)
+- [ ] 100% mastery threshold enforcement (cannot advance without mastery)
+- [ ] Knowledge Frontier calculation (boundary between known/unknown)
+- [ ] Progress visualization (mastery indicators, frontier position)
+- [ ] Mastery state persistence (Supabase)
+- [ ] Mastery-based lesson serving (only serve at frontier)
+
+### 🔧 Technical Details
+- Create Supabase table: `student_mastery` (user_id, topic_id, mastery_level, last_practiced, next_review)
+- Implement composable `useMastery.ts` for mastery tracking
+- Create mastery calculation logic (based on quiz performance, lesson completion)
+- Implement frontier calculation (topics where prerequisites mastered but topic not)
+- Build mastery progress UI components
+- Add mastery validation before topic advancement
+- Create API endpoints for mastery updates
+
+### ⏱️ Estimated Time
+8-10 hours
+
+### 🔗 Dependencies
+PR #8 (Knowledge Graph Foundation)
+
+### 🎮 Gamification Angle
+*Leveling up through mastery—unlocking new topics only when you've truly mastered the foundations!*
+
+---
+
+## 🎯 PR #10: Diagnostic & Placement Quest
+**Branch:** `feat/diagnostic-placement`
+
+### 📖 Description
+*Finding where students are on their math journey! The diagnostic system identifies each student's knowledge frontier through adaptive questioning, ensuring accurate placement for optimal learning.*
+
+### ✅ Acceptance Criteria
+- [ ] Diagnostic test generation (adaptive question selection)
+- [ ] Placement algorithm (identifies knowledge frontier)
+- [ ] Initial skill assessment flow
+- [ ] "I don't know" option (encourages honesty for accurate placement)
+- [ ] Diagnostic results storage
+- [ ] Placement accuracy validation
+
+### 🔧 Technical Details
+- Create Supabase table: `diagnostic_results` (user_id, topic_id, performance_data)
+- Implement diagnostic API endpoint: `/api/diagnostic`
+- Build adaptive question selection algorithm
+- Create placement algorithm that identifies frontier (boundary of knowledge)
+- Implement diagnostic UI flow (question presentation, answer collection)
+- Add "I don't know" option with encouragement messaging
+- Store diagnostic results and calculate initial mastery levels
+
+### ⏱️ Estimated Time
+6-8 hours
+
+### 🔗 Dependencies
+PR #8 (Knowledge Graph Foundation), PR #9 (Mastery Learning System)
+
+### 🎮 Gamification Angle
+*Starting your adventure at the right level—ensuring every step forward is meaningful and achievable!*
+
+---
+
+## 🔄 PR #11: Spaced Repetition (FIRe) Quest
+**Branch:** `feat/spaced-repetition`
+
+### 📖 Description
+*Implementing Math Academy's Fractional Implicit Repetition algorithm! Reviews on advanced topics automatically update simpler topics they encompass, dramatically reducing explicit reviews needed while maximizing learning consolidation.*
+
+### ✅ Acceptance Criteria
+- [ ] FIRe algorithm implementation (implicit repetition via encompassings)
+- [ ] Review scheduling per topic (calibrated to student-topic learning speed)
+- [ ] Implicit repetition logic (encompassing trickle-down)
+- [ ] Repetition compression (one advanced review "knocks out" multiple prerequisites)
+- [ ] Review scheduling (intentionally when memory is "fuzzy")
+- [ ] Review session UI
+
+### 🔧 Technical Details
+- Create composable `useSpacedRepetition.ts` for FIRe algorithm
+- Implement implicit repetition: successful reviews on advanced topics update prerequisite review schedules
+- Create review scheduling algorithm (calibrated per student-topic)
+- Implement repetition compression logic (select advanced reviews that cover prerequisites)
+- Build review session UI component
+- Add review scheduling to mastery tracking system
+- Create API endpoints for review scheduling and updates
+
+### ⏱️ Estimated Time
+10-12 hours
+
+### 🔗 Dependencies
+PR #8 (Knowledge Graph Foundation), PR #9 (Mastery Learning System)
+
+### 🎮 Gamification Angle
+*Smart repetition—the system remembers what you need to review, making every study session count!*
+
+---
+
+## 📚 PR #12: Knowledge Points & Micro-Scaffolding Quest
+**Branch:** `feat/knowledge-points`
+
+### 📖 Description
+*Breaking learning into tiny, manageable steps! Knowledge Points are 10x smaller than typical instruction, ensuring cognitive load never exceeds working memory capacity while building skills systematically.*
+
+### ✅ Acceptance Criteria
+- [ ] Knowledge Point (KP) structure (10x smaller than typical lessons)
+- [ ] Worked examples per KP (reduce cognitive load, establish schema)
+- [ ] Dual-coding visualizations (flowcharts, visual math diagrams)
+- [ ] Cognitive load management (ensure ≤4 coherent chunks)
+- [ ] KP delivery system (serve KPs sequentially within topic)
+- [ ] Progress tracking per KP
+
+### 🔧 Technical Details
+- Create database schema for Knowledge Points (kp_id, topic_id, order, content, worked_example, visualization)
+- Implement KP content structure (worked example + practice + validation)
+- Create visualization components for dual-coding (flowcharts, diagrams)
+- Build KP delivery system (serve KPs in order, track completion)
+- Implement cognitive load validation (ensure KPs are small enough)
+- Add KP progress tracking to mastery system
+- Create API endpoints for KP retrieval
+
+### ⏱️ Estimated Time
+10-12 hours
+
+### 🔗 Dependencies
+PR #8 (Knowledge Graph Foundation), PR #9 (Mastery Learning System)
+
+### 🎮 Gamification Angle
+*Tiny steps, big progress—breaking down complex topics into bite-sized chunks that feel achievable!*
+
+---
+
+## 📝 PR #13: Retrieval Practice System Quest
+**Branch:** `feat/retrieval-practice`
+
+### 📖 Description
+*The best way to review is to test yourself! Frequent, interleaved quizzes covering broad topics, designed for 80-85% accuracy (the sweet spot for learning) to build long-term retention.*
+
+### ✅ Acceptance Criteria
+- [ ] Interleaved quiz generation (broad mix of topics)
+- [ ] Timed quiz functionality (after proficiency achieved)
+- [ ] 80-85% accuracy targeting (quiz difficulty calibration)
+- [ ] Retrieval practice analytics (track quiz performance)
+- [ ] Low-stakes quiz structure (promote growth mindset)
+- [ ] Quiz session UI
+
+### 🔧 Technical Details
+- Create Supabase table: `quiz_sessions` (id, user_id, topics, questions, results, accuracy)
+- Implement quiz generation API: `/api/quiz/generate`
+- Build interleaved topic selection algorithm
+- Create timed quiz functionality (optional timer after proficiency)
+- Implement accuracy targeting (adjust difficulty to maintain 80-85%)
+- Build quiz UI component (question display, answer collection, results)
+- Add quiz analytics tracking
+- Integrate quiz results with mastery tracking
+
+### ⏱️ Estimated Time
+8-10 hours
+
+### 🔗 Dependencies
+PR #8 (Knowledge Graph Foundation), PR #9 (Mastery Learning System)
+
+### 🎮 Gamification Angle
+*Test your knowledge—quizzes that feel challenging are designed that way, helping you remember better!*
+
+---
+
+## 🌟 PR #14: Bonus Quest - Stretch Features
 **Branch:** `feat/stretch-features`
 
 ### 📖 Description
-*If we have extra time and energy, let's add the cherry on top! Interactive whiteboard, voice interface, and enhanced gamification.*
+*If we have extra time and energy, let's add the cherry on top! Interactive whiteboard, voice interface, and enhanced gamification—all integrated with our Knowledge Graph system.*
 
 ### ✅ Acceptance Criteria
 - [ ] Interactive whiteboard with Konva.js (top priority)
 - [ ] Voice interface with Web Speech API
 - [ ] Animated avatar with Lottie
-- [ ] Difficulty modes (Easy/Hard)
-- [ ] Problem generation for bonus rounds
+- [ ] Difficulty modes (Easy/Hard) with KG awareness
+- [ ] Problem generation for bonus rounds (KG-based)
 - [ ] Enhanced gamification elements
 
 ### 🔧 Technical Details
 - Integrate Konva.js for whiteboard
 - Implement Web Speech API
 - Add Lottie animations
-- Create difficulty toggles
-- Enhance prompt engineering for generation
-- Test all new features
+- Create difficulty toggles (adjust hint frequency, XP rewards)
+- Enhance prompt engineering for KG-based problem generation
+- Test all new features with KG integration
+- Ensure whiteboard syncs with Knowledge Graph topics
 
 ### ⏱️ Estimated Time
 8-12 hours (if time allows)
@@ -246,7 +462,7 @@ PR #5 (Beauty Quest)
 PR #6 (Launch Quest)
 
 ### 🎮 Gamification Angle
-*Extra features that make learning math even more engaging and interactive!*
+*Extra features that make learning math even more engaging and interactive, all while maintaining our mastery learning foundation!*
 
 ---
 

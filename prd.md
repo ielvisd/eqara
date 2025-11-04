@@ -11,32 +11,55 @@ This PRD is now locked and ready for LLM-driven implementation (e.g., feed direc
 ## 1. Overview
 
 ### 1.1 Product Vision
-A web-based AI tutor that empowers students to solve math problems independently through Socratic questioning, mimicking a patient human teacher—supercharged with light videogame-like engagement to make learning addictive and fun. Inspired by the Khan Academy/OpenAI "Khanmigo" demo, it parses problems from text or screenshots, engages in multi-turn dialogues to guide discovery (never spoon-feeding answers), and adapts to the learner's pace. Gamification elements (e.g., simple XP rewards, badges, and quick animations) add playful hooks without overwhelming the educational core, turning sessions into light-hearted "quests" for joy and retention.
+A pedagogically-grounded AI math tutor that empowers students through evidence-based learning strategies, optimized for CCAT-style math preparation while maintaining scalability for broader curriculum. Built on Math Academy's mastery learning framework, the system uses a Knowledge Graph structure to deliver individualized instruction at each student's knowledge frontier. Through Socratic questioning, micro-scaffolding (Knowledge Points), spaced repetition (FIRe algorithm), and retrieval practice, students achieve 4x learning acceleration compared to traditional classrooms. The system combines rigorous pedagogy with light videogame-like engagement—where 1 XP ≈ 1 minute of focused work—making mastery learning addictive and fun. Inspired by the Khan Academy/OpenAI "Khanmigo" demo's empathetic approach, enhanced with Math Academy's science-backed learning acceleration.
 
 ### 1.2 Objectives
-**Primary:** Deliver guided, context-aware math tutoring for K-12+ students via a simple, immersive chat interface.
+**Primary:** Deliver mastery-based, individualized math tutoring optimized for CCAT preparation (arithmetic, algebra, proportions, word problems) via a Knowledge Graph-driven adaptive system that ensures students work only at their knowledge frontier, achieving 100% mastery before advancing.
 
-**Secondary:** Demonstrate rapid prototyping with Nuxt + Supabase for a deployable MVP in 3-5 days, emphasizing fun, game-like interactions while referencing stack-specific MCPs (Modular Component Prompts/docs/templates) throughout for efficient, error-free builds.
+**Secondary:** Implement Math Academy's full pedagogical toolkit (Knowledge Graph, mastery tracking, spaced repetition, micro-scaffolding, retrieval practice) while maintaining rapid development with Nuxt + Supabase, emphasizing evidence-based learning acceleration and engaging game-like interactions.
 
-**Inspiration Reference:** Khanmigo demo (YouTube: https://www.youtube.com/watch?v=IvXZCocyU_M) – Focus on empathetic, question-led interactions, now lightly gamified like a casual math adventure for hooks like quick wins and cheers.
+**Pedagogical Foundation:** Based on Math Academy's "The Math Academy Way" philosophy—achieving Bloom's Two-Sigma Solution through scalable technology, delivering fully individualized, mastery-driven instruction that accelerates learning 4x faster than traditional methods.
+
+**Inspiration References:** 
+- Khanmigo demo (YouTube: https://www.youtube.com/watch?v=IvXZCocyU_M) – Empathetic, question-led interactions
+- Math Academy pedagogy – Mastery learning, Knowledge Graph, spaced repetition, retrieval practice
 
 ### 1.3 Success Criteria
-**Pedagogical:** Successfully guides users through 5+ problem types without direct answers; 80%+ user sessions reach solution via student-led steps; light gamification boosts engagement (e.g., +15% session time via analytics).
+**Pedagogical:** 
+- Mastery rate per topic (target: 100% before advancement)
+- Knowledge frontier advancement speed (target: 4x faster than traditional)
+- Placement accuracy (diagnostic correctly identifies student's frontier)
+- Retrieval practice effectiveness (80-85% quiz accuracy target)
+- Spaced repetition calibration accuracy (reviews scheduled optimally)
 
-**Technical:** Accurate problem parsing (90%+ OCR/Vision success on printed text); maintains conversation context across 10+ turns; renders math equations flawlessly.
+**Technical:** 
+- Knowledge Graph query performance (<100ms for frontier calculation)
+- Accurate problem parsing (90%+ OCR/Vision success on printed text)
+- Maintains conversation context across 10+ turns with KG awareness
+- Renders math equations flawlessly
+- Spaced repetition algorithm accuracy (FIRe implementation working)
 
-**User:** <5% drop-off in sessions; intuitive, engaging UI with <2 clicks to start tutoring; NPS >8/10 for "fun factor."
+**User:** 
+- <5% drop-off in sessions
+- Intuitive UI with diagnostic/placement flow (<3 clicks to start)
+- NPS >8/10 for "fun factor" and learning effectiveness
+- Mastery achievement rate (students reaching 100% mastery on topics)
 
-**Business/Dev:** Deployed app live (Vercel for Nuxt + Supabase); clean repo with 100% test coverage on core flows; MCP references ensure smooth component integration.
+**Business/Dev:** 
+- Deployed app live (Vercel for Nuxt + Supabase)
+- Clean repo with 100% test coverage on core flows
+- Knowledge Graph schema and mastery tracking implemented
+- MCP references ensure smooth component integration
 
 ### 1.4 Target Audience & Personas
-**Primary Users:** Students (ages 8-18) tackling homework; parents/teachers monitoring progress.
+**Primary Users:** Students preparing for CCAT or similar assessments (ages 14-18); students seeking accelerated math learning; parents/teachers monitoring mastery-based progress.
 
-**Persona Example:**
-- **Alex (12yo Middle Schooler):** Struggles with algebra but loves games; uploads phone pics of worksheets; thrives on light rewards like a quick "XP ping!" and badge pop-up for motivation.
-- **Jordan (HS Teacher):** Uses for classroom demos; values exportable session logs with gamified progress summaries for assessment.
+**Persona Examples:**
+- **Alex (16yo CCAT Prep Student):** Needs to master basic algebra, proportions, and word problems for job assessment. Takes diagnostic to identify knowledge frontier; works through Knowledge Points at own pace; benefits from spaced repetition to maintain automaticity. Thrives on mastery-based progression and XP rewards (1 XP ≈ 1 minute of work).
+- **Jordan (HS Teacher):** Uses for classroom mastery tracking; values detailed mastery reports per topic, knowledge frontier visualization, and evidence that students achieve 100% mastery before advancing.
+- **Sam (Parent of 14yo):** Appreciates transparent progress tracking showing mastery levels, knowledge frontier advancement, and spaced repetition schedule.
 
-**Assumptions:** English-only; web access (desktop/mobile); optional auth for personalized progress tracking.
+**Assumptions:** English-only; web access (desktop/mobile); optional auth for personalized progress tracking and cross-device mastery persistence.
 
 ### 1.5 Timeline & Scope
 
@@ -70,14 +93,22 @@ A web-based AI tutor that empowers students to solve math problems independently
 **Frontend:** Nuxt 3 (Vue 3) with Nuxt UI for polished, accessible components (e.g., UChatBubble, UButton—always reference Nuxt UI MCP for implementation details like props/events).
 
 **Backend/Services:**
-- **Supabase:** Auth (email/magic link, optional anonymous), Storage (image uploads), Realtime DB (chat history + gamestate like XP/badges), Edge Functions (LLM proxy).
+- **Supabase:** 
+  - Auth (email/magic link, optional anonymous)
+  - Storage (image uploads)
+  - Realtime DB (chat history + gamestate + mastery tracking + spaced repetition schedules)
+  - Database with Knowledge Graph schema (topics, prerequisites, encompassings, mastery tracking, diagnostic results, quiz sessions)
+  - Edge Functions (LLM proxy, diagnostic API, quiz generation)
 - **LLM:** Grok (recommended for this task—its witty, engaging personality is perfect for kids, blending helpful guidance with light humor to keep things fun and relatable without overwhelming; excels in creative, adaptive Socratic responses; low token use for iterative chats. Fallback to Sonnet for deeper reasoning if needed).
 - **OCR/Vision:** LLM's built-in (e.g., Grok's multimodal if available, or proxy via OpenAI Vision).
 - **Math Rendering:** KaTeX (client-side, via Nuxt UI's UMarkdown—per MCP).
 
 **Deployment:** Vercel (Nuxt) + Supabase (hosted); GitHub repo for version control.
 
-**Other Libs:** UI/Gamification: Nuxt UI + lightweight animations (e.g., Vue transitions per Vue MCP).
+**Other Libs:** 
+- UI/Gamification: Nuxt UI + lightweight animations (e.g., Vue transitions per Vue MCP)
+- Knowledge Graph: Custom implementation with Supabase Postgres (graph queries via SQL)
+- Spaced Repetition: Custom FIRe algorithm implementation
 
 **Testing:** Playwright for E2E (reference MCP for chat/auth scripts).
 
@@ -98,14 +129,67 @@ A web-based AI tutor that empowers students to solve math problems independently
 - **Edge Cases:** Blurry images → Retry with fun nudge ("Sharpen that spell—try again!").
 
 **Socratic Dialogue**
-- **Multi-turn chat:** LLM maintains context; Nuxt UI UCard-based bubbles (MCP for layout variants).
+- **Multi-turn chat:** LLM maintains context with Knowledge Graph awareness; Nuxt UI UCard-based bubbles (MCP for layout variants).
 - **Guidance Rules:** Ask open questions; validate with light game hooks (e.g., "+5 XP for that spark!").
-- **Hints:** After 2 stuck turns, concrete nudge; frame as "quick boost."
+- **KG-Integrated Hints:** After 2 stuck turns, provide hints based on prerequisite knowledge gaps identified via Knowledge Graph.
+- **Remediation Flow:** If lesson failed twice, automatically assign remedial reviews on prerequisite topics (pinpointed via KG), enforce consolidation break, then allow re-attempt.
+- **Context-Aware Questioning:** Adjust questions based on student's mastery level and topic difficulty.
 - **Encouragement:** Positive, playful ("Nice move—you're questing like a pro!").
-- **Adaptation:** Track understanding; adjust like casual game pacing.
-- **Persistence:** Supabase sessions w/ auth-optional profiles; save light gamestate (XP, badges).
+- **Persistence:** Supabase sessions w/ auth-optional profiles; save mastery state, gamestate (XP, badges), and spaced repetition schedules.
 
-**Light Gamification Layer:** Simple XP per step (10-50); 3-5 badges (e.g., "Equation Explorer"); subtle animations (e.g., glow on rewards); no deep progression—just feel-good ticks.
+**Knowledge Graph System**
+- **Topic Structure:** Prerequisite and encompassing relationships for CCAT domains (arithmetic, algebra, proportions, word problems).
+- **Knowledge Frontier:** Algorithmically calculate student's frontier (boundary between known/unknown); only serve lessons at frontier.
+- **Topic Hierarchy:** Visual representation of topic relationships and student progress through the graph.
+
+**Mastery Learning**
+- **Topic-Level Mastery:** Track mastery per topic with 100% threshold enforcement.
+- **Mastery Tracking:** Granular progress tracking (mastery_level, last_practiced, next_review per topic).
+- **Advancement Rule:** Students cannot progress to new topics until achieving 100% mastery on prerequisites.
+- **Progress Visualization:** Visual indicators showing mastery levels and knowledge frontier position.
+
+**Spaced Repetition (FIRe Algorithm)**
+- **Fractional Implicit Repetition:** Reviews on advanced topics automatically update review schedules for simpler topics they encompass (implicit repetition).
+- **Repetition Compression:** System selects one advanced topic review that "knocks out" multiple due prerequisite reviews, maximizing efficiency.
+- **Calibration:** Spacing calibrated per student-topic based on learning speed (student ability to topic difficulty ratio).
+- **Review Scheduling:** Reviews intentionally scheduled when memory is slightly "fuzzy" to maximize consolidation.
+
+**Knowledge Points (Micro-Scaffolding)**
+- **Tiny Steps:** Lessons broken into Knowledge Points (KPs) that are 10x smaller than typical instruction.
+- **Worked Examples:** Each KP starts with a worked example to reduce cognitive load and establish schema.
+- **Dual-Coding:** Heavy use of visualizations and diagrams (flowcharts, visual math) to distribute cognitive load across verbal and visual working memory channels.
+- **Cognitive Load Management:** Ensure cognitive load never exceeds student's working memory capacity (~4 coherent chunks).
+
+**Diagnostic & Placement System**
+- **Initial Diagnostic:** Placement test to identify student's knowledge frontier.
+- **Adaptive Question Selection:** Questions adapt based on responses to quickly pinpoint frontier.
+- **Honesty Encouragement:** Students skip questions they can't solve quickly ("I don't know") to ensure accurate placement.
+- **Frontier Calculation:** Algorithm determines the boundary between what student knows and doesn't know.
+
+**Retrieval Practice (Testing Effect)**
+- **Interleaved Quizzes:** Frequent quizzes covering broad mix of topics (interleaved).
+- **Timed Quizzes:** Timed quizzes introduced after proficiency to build fluency and assess automaticity.
+- **Accuracy Target:** Quizzes designed for 80-85% accuracy range (sweet spot for learning).
+- **Low-Stakes:** Frequent, low-stakes quizzes structured to promote growth mindset.
+
+**Targeted Remediation**
+- **Granular Targeting:** Remediation targeted to individual students and specific component skills.
+- **High-Integrity:** Never lowers the bar for success; requires 100% mastery.
+- **Corrective Flow:** Failed lesson twice → prerequisite review (via KG) → consolidation break → re-attempt.
+- **Prerequisite Pinpointing:** Use Knowledge Graph structure to identify exact prerequisite topics implicated in struggle.
+
+**Automaticity Development**
+- **Baseline Mastery:** Require sufficient practice to reach baseline mastery threshold before layering new topics.
+- **Timed Checks:** Frequent timed quizzes with remedial follow-up to check for and enforce automaticity on foundational facts and procedures.
+- **Fluency Building:** Timed testing only after proficiency to build fluency without increasing math anxiety.
+
+**Gamification Layer (Math Academy Calibrated):**
+- **XP System:** 1 XP ≈ 1 minute of fully-focused, productive work (calibrated to Math Academy standard).
+- **XP Rewards:** 10-50 XP per step/topic; bonus XP for perfect work; penalties for poor effort/rushing.
+- **Quality Incentives:** XP incentivizes both quantity (pace/leaderboards) and quality (bonus for mastery, penalties for guessing).
+- **Badges:** 3-5 achievement badges (e.g., "Equation Explorer", "Mastery Champion", "Knowledge Frontier Explorer").
+- **Animations:** Subtle animations (e.g., glow on rewards, mastery unlock celebrations).
+- **Loophole Prevention:** XP penalties for rushing/guessing prevent "XP hackers" and force engagement with deliberate practice.
 
 **Math Rendering**
 - Render LaTeX/KaTeX in chat: Auto via UMarkdown (Nuxt UI MCP for math delimiters).
@@ -143,7 +227,14 @@ A web-based AI tutor that empowers students to solve math problems independently
 - **Student:** "the +5?"
 - **Tutor:** "Yes! Subtract from both—zap! What's next? +15 XP!" → To win with cheer.
 
-**Supported Problem Types (Test with 5+):** Arithmetic, algebra, geometry, word problems, multi-step—with subtle themes (e.g., "algebra quest").
+**Supported Problem Types (CCAT-Focused, Test with 5+):** 
+- **Arithmetic Foundations:** Basic operations, order of operations, mental math techniques
+- **Algebra Fundamentals:** Variables and expressions, linear equations, basic word problems
+- **Proportions & Ratios:** Fraction operations, ratio calculations, percentage problems
+- **Word Problems:** Problem decomposition, equation setup, solution verification
+- **Multi-step Problems:** Combining multiple CCAT domains
+
+All problem types integrated with Knowledge Graph structure for prerequisite-aware instruction.
 
 ## 4. Non-Functional Requirements
 **Performance:** <2s responses; smooth anims (60fps via Nuxt UI/Vue MCP).
@@ -157,13 +248,42 @@ A web-based AI tutor that empowers students to solve math problems independently
 **Analytics:** Supabase logs for sessions/XP; in-app feedback for eval.
 
 ## 5. Socratic Approach & Prompt Engineering
-**System Prompt (Kid-Friendly w/ Grok Vibe):** "You are a fun math quest guide—like a clever sidekick. NEVER direct answers—spark curiosity: 'What clues sparkle here?' 'What trick unlocks it?' Stuck >2 turns? Share a 'secret scroll' hint. Always upbeat, playful: Toss 'XP' cheers, keep it zippy and encouraging for young adventurers."
 
-**Full Flow:** Parse → Clues list → Goal hunt → Step sparks → Validate w/ rewards → Reflect lightly ("Cool win— what made it click?").
+### 5.1 System Prompt (KG-Integrated, Kid-Friendly w/ Grok Vibe)
+**Core Identity:** "You are a fun math quest guide grounded in mastery learning—like a clever sidekick who knows exactly what students need to learn next based on their Knowledge Graph position. You guide students through Knowledge Points (tiny steps) at their knowledge frontier, ensuring they master each topic before advancing."
 
-**Context Management:** History + gamestate in prompts; smart truncate.
+**Key Rules:**
+- **NEVER direct answers**—spark curiosity: "What clues sparkle here?" "What trick unlocks it?"
+- **Knowledge Graph Awareness:** Use student's mastery level and topic prerequisites to inform questions
+- **Remediation Triggers:** If student fails lesson twice, reference prerequisite topics that need review
+- **Hint System:** After 2 stuck turns, provide hints based on prerequisite knowledge gaps (via KG)
+- **Mastery Validation:** Confirm student understanding before allowing progression
+- **Always upbeat, playful:** Toss 'XP' cheers (1 XP ≈ 1 minute), keep it zippy and encouraging
 
-**Notes Doc:** Grok-optimized samples; MCP rule for prompt tweaks.
+### 5.2 Prompt Integration with Knowledge Graph
+- **Topic Context:** Include current topic, prerequisites, and mastery level in prompt
+- **Frontier Awareness:** Only ask questions about topics at student's knowledge frontier
+- **Prerequisite Gaps:** When student struggles, identify which prerequisites need review via KG
+- **Mastery Status:** Reference mastery level to adjust question difficulty and scaffolding
+
+### 5.3 Full Flow (KG-Enhanced)
+1. **Diagnostic/Placement:** Identify knowledge frontier via diagnostic
+2. **Topic Selection:** Serve lessons only at knowledge frontier
+3. **Knowledge Point Delivery:** Break lessons into tiny KPs with worked examples
+4. **Socratic Guidance:** Ask open questions, use KG to identify prerequisite gaps
+5. **Mastery Validation:** Confirm 100% mastery before advancing
+6. **Spaced Repetition:** Schedule reviews via FIRe algorithm
+7. **Remediation:** If failed twice, assign prerequisite reviews → consolidation break → re-attempt
+
+### 5.4 Context Management
+- **History + Gamestate:** Conversation history + XP/badges + mastery state
+- **Knowledge Graph State:** Current topic, prerequisites, mastery levels, review schedule
+- **Smart Truncation:** Prioritize recent messages + KG context + mastery data
+
+### 5.5 Prompt Engineering Notes
+- **Grok-optimized samples:** Maintain playful, engaging tone while integrating pedagogical rigor
+- **MCP rule:** Reference Math Academy pedagogy docs for mastery learning principles
+- **CCAT Focus:** Emphasize arithmetic, algebra, proportions, word problems in examples
 
 ## 6. Deliverables
 **Deployed App:** Live Vercel URL; local via `npm run dev`.

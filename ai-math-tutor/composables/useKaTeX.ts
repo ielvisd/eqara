@@ -62,6 +62,43 @@ export const useKaTeX = () => {
     }
   }
 
+  // Find the start index of the current problem (most recent user message with an equation)
+  const findCurrentProblemStart = (messages: Array<{role: string, content: string} | any>): number => {
+    if (messages.length === 0) return 0
+    
+    // Look backwards through messages to find the most recent user message with an equation
+    // This represents where the current problem conversation begins
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      
+      if (msg.role === 'user') {
+        const content = msg.content || ''
+        
+        // Check for equation patterns: "4x-2 = 10", "4x+2 = 12", "2x+7=3", etc.
+        // Pattern matches: coefficient*x +/- constant = number
+        const equationMatch = content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
+        if (equationMatch) {
+          return i
+        }
+        
+        // Also match simpler forms: "4x = 10", "2x=5", etc.
+        const simpleMatch = content.match(/(\d+x\s*=\s*\d+)/i)
+        if (simpleMatch) {
+          return i
+        }
+        
+        // Look for LaTeX equations in user messages
+        const latexMatch = content.match(/\\[\(\[]([^\)\]]*?[+\-].*?=.*?)\\?[\)\]]/)
+        if (latexMatch) {
+          return i
+        }
+      }
+    }
+    
+    // Fallback: if no equation found, return 0 (show all messages)
+    return 0
+  }
+
   // Extract current equation from messages (should be the ORIGINAL problem)
   const extractCurrentEquation = (messages: Array<{role: string, content: string} | any>): string | null => {
     // First, look for the FIRST user message with an equation (original problem)
@@ -216,13 +253,17 @@ export const useKaTeX = () => {
     return null
   }
 
-  const extractAllSteps = (messages: Array<{role: string, content: string} | any>): Step[] => {
+  const extractAllSteps = (messages: Array<{role: string, content: string} | any>, startIndex: number = 0): Step[] => {
     const steps: Step[] = []
     
     if (messages.length === 0) return steps
     
-    // Find original equation
-    const originalEq = extractCurrentEquation(messages)
+    // Only process messages from startIndex onward (current problem only)
+    const currentProblemMessages = messages.slice(startIndex)
+    if (currentProblemMessages.length === 0) return steps
+    
+    // Find original equation from current problem messages
+    const originalEq = extractCurrentEquation(currentProblemMessages)
     if (originalEq) {
       steps.push({
         equation: originalEq,
@@ -237,9 +278,9 @@ export const useKaTeX = () => {
     let currentEq = originalEq
     let lastOperation: string | null = null
     
-    // Look through messages chronologically to build step history
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i]
+    // Look through messages chronologically to build step history (starting from startIndex)
+    for (let i = 0; i < currentProblemMessages.length; i++) {
+      const msg = currentProblemMessages[i]
       
       // Check for operation mentions - ONLY from user messages
       // AI messages might reference operations in questions, which would overwrite the correct operation
@@ -423,9 +464,9 @@ export const useKaTeX = () => {
       // Also check user messages for correct answers (when AI confirms them)
       // This helps catch cases where student provides the correct equation
       // BUT: Be very strict - only add if AI explicitly confirms it
-      if (msg.role === 'user' && i > 0 && messages[i - 1]?.role === 'assistant') {
+      if (msg.role === 'user' && i > 0 && currentProblemMessages[i - 1]?.role === 'assistant') {
         // Check if the previous AI message was asking for the equation
-        const prevAiMsg = messages[i - 1].content || ''
+        const prevAiMsg = currentProblemMessages[i - 1].content || ''
         const isAskingForEquation = prevAiMsg.toLowerCase().includes('what does the equation') || 
                                      prevAiMsg.toLowerCase().includes('can you write that down') ||
                                      prevAiMsg.toLowerCase().includes('show me') ||
@@ -437,7 +478,7 @@ export const useKaTeX = () => {
           if (userEqMatch && userEqMatch[1] !== currentEq) {
             // CRITICAL: Check if next AI message confirms it (to avoid adding wrong guesses)
             // If there's no next message yet, or if it's not from assistant, DON'T ADD
-            const nextMsg = i + 1 < messages.length ? messages[i + 1] : null
+            const nextMsg = i + 1 < currentProblemMessages.length ? currentProblemMessages[i + 1] : null
             if (!nextMsg || nextMsg.role !== 'assistant') {
               // No confirmation yet - don't add user's guess
               continue
@@ -539,7 +580,8 @@ export const useKaTeX = () => {
     extractCurrentEquation,
     extractCurrentStep,
     extractLastOperation,
-    extractAllSteps
+    extractAllSteps,
+    findCurrentProblemStart
   }
 }
 

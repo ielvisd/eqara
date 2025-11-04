@@ -390,7 +390,7 @@ const { getSessionId, saveMessage, loadChatHistory, subscribeToChat, resetSessio
 const { gameState, addXP } = useGamification()
 
 // KaTeX for math rendering
-const { renderMath, extractCurrentEquation, extractCurrentStep, extractLastOperation, extractAllSteps } = useKaTeX()
+const { renderMath, extractCurrentEquation, extractCurrentStep, extractLastOperation, extractAllSteps, findCurrentProblemStart } = useKaTeX()
 
 // File upload state - UFileUpload can return File, File[], or null
 const files = ref<File | File[] | null>(null) as any
@@ -448,8 +448,13 @@ const lastOperation = computed(() => {
   return extractLastOperation(messages.value)
 })
 
+// Find where the current problem starts (most recent user message with equation)
+const currentProblemStart = computed(() => {
+  return findCurrentProblemStart(messages.value)
+})
+
 const allSteps = computed(() => {
-  return extractAllSteps(messages.value)
+  return extractAllSteps(messages.value, currentProblemStart.value)
 })
 
 // Extract final solution (x = value)
@@ -461,11 +466,12 @@ const finalSolution = computed(() => {
   return match && match[1] ? match[1] : null
 })
 
-// Check if there's verification in the conversation
+// Check if there's verification in the conversation (only for current problem)
 const hasVerification = computed(() => {
   if (!finalSolution.value) return false
-  // Look for substitution/verification mentions
-  const hasSubstitution = messages.value.some(msg => {
+  // Only look for substitution/verification mentions in the current problem messages
+  const currentProblemMessages = messages.value.slice(currentProblemStart.value)
+  const hasSubstitution = currentProblemMessages.some(msg => {
     const content = (msg.content || '').toLowerCase()
     return content.includes('substitut') || 
            content.includes('verify') ||

@@ -23,9 +23,16 @@ graph TB
             AuthUI[Auth Modal<br/>UModal, UButton]
         end
         subgraph "🎮 Gamification"
-            XPDisplay[XP Counter<br/>Real-time updates]
+            XPDisplay[XP Counter<br/>Real-time updates<br/>1 XP ≈ 1 min]
             BadgeSys[Badge System<br/>Achievement unlocks]
             Animations[CSS Animations<br/>60fps transitions]
+        end
+        subgraph "🧠 Pedagogical Systems"
+            KGVisualization[Knowledge Graph<br/>Topic hierarchy<br/>Progress visualization]
+            MasteryTracking[Mastery Tracking<br/>Per-topic mastery<br/>Frontier calculation]
+            SpacedRepetition[Spaced Repetition<br/>FIRe algorithm<br/>Review scheduling]
+            DiagnosticUI[Diagnostic & Placement<br/>Frontier identification]
+            QuizUI[Retrieval Practice<br/>Interleaved quizzes<br/>80-85% accuracy target]
         end
         subgraph "📐 Math Rendering"
             KaTeX[KaTeX Engine<br/>via UMarkdown]
@@ -36,7 +43,10 @@ graph TB
     subgraph "🔧 API Layer (Supabase Edge Functions)"
         LLMProxy[LLM Proxy<br/>Edge Function]
         VisionAPI[Vision Processing<br/>OCR/Image parsing]
-        PromptEngine[Socratic Prompts<br/>Context management]
+        PromptEngine[Socratic Prompts<br/>KG-aware context]
+        KGApi[Knowledge Graph API<br/>Prerequisites, Frontier<br/>Topic queries]
+        DiagnosticAPI[Diagnostic API<br/>Placement algorithm<br/>Frontier calculation]
+        QuizAPI[Quiz Generation API<br/>Interleaved questions<br/>Accuracy targeting]
     end
 
     %% Data Layer
@@ -48,6 +58,10 @@ graph TB
             ChatDB[(Chat History<br/>Realtime enabled)]
             GameStateDB[(Gamestate<br/>XP, Badges, Progress)]
             UserProfiles[(User Profiles<br/>Optional persistence)]
+            KnowledgeGraphDB[(Knowledge Graph<br/>Topics, Prerequisites<br/>Encompassings)]
+            MasteryDB[(Mastery Tracking<br/>Per-topic mastery<br/>Frontier calculation)]
+            DiagnosticDB[(Diagnostic Results<br/>Placement data)]
+            QuizDB[(Quiz Sessions<br/>Retrieval practice)]
         end
         subgraph "Storage"
             FileStorage[(File Storage<br/>Image uploads)]
@@ -97,12 +111,32 @@ graph TB
     ChatUI --> ChatDB
     XPDisplay --> GameStateDB
     BadgeSys --> GameStateDB
+    KGVisualization --> KnowledgeGraphDB
+    MasteryTracking --> MasteryDB
+    SpacedRepetition --> MasteryDB
+    DiagnosticUI --> DiagnosticDB
+    QuizUI --> QuizDB
 
     UploadUI --> FileStorage
 
     ChatDB -.-> ChatUI
     GameStateDB -.-> XPDisplay
     GameStateDB -.-> BadgeSys
+    KnowledgeGraphDB -.-> KGVisualization
+    MasteryDB -.-> MasteryTracking
+    MasteryDB -.-> SpacedRepetition
+    DiagnosticDB -.-> DiagnosticUI
+    QuizDB -.-> QuizUI
+
+    Nuxt --> KGApi
+    Nuxt --> DiagnosticAPI
+    Nuxt --> QuizAPI
+
+    KGApi --> KnowledgeGraphDB
+    DiagnosticAPI --> DiagnosticDB
+    DiagnosticAPI --> KnowledgeGraphDB
+    QuizAPI --> QuizDB
+    QuizAPI --> KnowledgeGraphDB
 
     Playwright -.-> Nuxt
     Vercel -.-> Nuxt
@@ -118,9 +152,9 @@ graph TB
     classDef external fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
     classDef user fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
-    class Nuxt,ChatUI,UploadUI,SidebarUI,AuthUI,XPDisplay,BadgeSys,Animations,KaTeX frontend
-    class Auth,ChatDB,GameStateDB,UserProfiles,FileStorage data
-    class LLMProxy,VisionAPI,PromptEngine api
+    class Nuxt,ChatUI,UploadUI,SidebarUI,AuthUI,XPDisplay,BadgeSys,Animations,KaTeX,KGVisualization,MasteryTracking,SpacedRepetition,DiagnosticUI,QuizUI frontend
+    class Auth,ChatDB,GameStateDB,UserProfiles,FileStorage,KnowledgeGraphDB,MasteryDB,DiagnosticDB,QuizDB data
+    class LLMProxy,VisionAPI,PromptEngine,KGApi,DiagnosticAPI,QuizAPI api
     class Grok,Fallback,Playwright,Vercel,SupabaseCloud external
     class Student,Teacher,Parent user
 ```
@@ -128,11 +162,15 @@ graph TB
 ## 🏛️ Architecture Overview
 
 ### 🎯 Core Principles
-- **Socratic Focus**: Never direct answers - guide through questions
-- **Light Gamification**: XP rewards and badges for engagement
+- **Mastery Learning**: 100% mastery before advancement; topic-level granularity
+- **Knowledge Graph**: Prerequisite/encompassing relationships drive instruction
+- **Knowledge Frontier**: Only serve lessons at student's frontier (boundary of knowledge)
+- **Socratic Focus**: Never direct answers - guide through questions with KG awareness
+- **Evidence-Based**: Math Academy pedagogy (spaced repetition, retrieval practice, micro-scaffolding)
+- **Gamification Calibrated**: 1 XP ≈ 1 minute of focused work (Math Academy standard)
 - **MCP-Driven**: All components reference official docs for accuracy
 - **Mobile-First**: Responsive design for all devices
-- **Optional Auth**: Anonymous sessions with optional persistence
+- **Optional Auth**: Anonymous sessions with optional persistence for mastery tracking
 
 ### 🔄 Data Flow Patterns
 
@@ -142,18 +180,23 @@ graph TB
 3. **Parsing**: Extract mathematical content and context
 4. **Chat Integration**: Display parsed problem in gamified chat interface
 
-#### Conversational Flow
+#### Conversational Flow (KG-Enhanced)
 1. **Student Response**: Input through chat interface
-2. **Context Assembly**: Combine with conversation history + gamestate
-3. **LLM Processing**: Grok generates Socratic response with XP rewards
-4. **Real-time Updates**: Supabase realtime pushes updates to UI
-5. **Gamification**: XP/badges update with smooth animations
+2. **Context Assembly**: Combine with conversation history + gamestate + Knowledge Graph state (current topic, mastery levels, prerequisites)
+3. **KG-Aware Processing**: Query Knowledge Graph for prerequisite gaps, mastery status, frontier position
+4. **LLM Processing**: Grok generates Socratic response with KG context (topic, prerequisites, mastery level) and XP rewards
+5. **Real-time Updates**: Supabase realtime pushes updates to UI (chat, mastery, reviews)
+6. **Gamification**: XP/badges update with smooth animations (1 XP ≈ 1 minute)
+7. **Mastery Validation**: Confirm 100% mastery before allowing topic advancement
+8. **Remediation**: If lesson failed twice, assign prerequisite reviews via KG → consolidation break → re-attempt
 
 #### Persistence Layer
 1. **Anonymous Sessions**: Basic functionality without auth
-2. **Optional Profiles**: Email/magic link for progress tracking
-3. **Realtime Sync**: Live updates across browser tabs
-4. **Cross-Session**: Resume conversations and maintain progress
+2. **Optional Profiles**: Email/magic link for progress tracking (mastery, KG position, spaced repetition schedule)
+3. **Realtime Sync**: Live updates across browser tabs (chat, mastery, reviews)
+4. **Cross-Session**: Resume conversations and maintain progress (mastery state, knowledge frontier, review schedule)
+5. **Knowledge Graph State**: Topic mastery, prerequisites mastered, encompassings, frontier position
+6. **Spaced Repetition State**: Review schedules per topic, implicit repetition tracking, repetition compression
 
 ### 🛡️ Security & Performance
 
@@ -189,7 +232,10 @@ graph TB
 | **Frontend** | Nuxt 3 + Vue 3 | Full-stack Vue with SSR, excellent DX |
 | **UI Library** | Nuxt UI | Consistent, accessible, MCP-documented |
 | **Backend** | Supabase | Auth, DB, Storage, Realtime in one platform |
-| **LLM** | Grok | Kid-friendly personality, engaging responses |
+| **Knowledge Graph** | Custom (Postgres) | Topic hierarchy, prerequisites, encompassings via SQL |
+| **Mastery System** | Custom (Supabase) | Topic-level mastery tracking, frontier calculation |
+| **Spaced Repetition** | Custom FIRe | Fractional Implicit Repetition algorithm |
+| **LLM** | Grok | Kid-friendly personality, engaging KG-aware responses |
 | **Math Rendering** | KaTeX | Fast, client-side LaTeX rendering |
 | **Deployment** | Vercel | Nuxt-optimized, global CDN |
 | **Testing** | Playwright | E2E testing for complex user flows |
