@@ -1,5 +1,6 @@
 // Mastery API: Get mastery for a topic or all topics
 // Reference: nuxt.com/docs/guide/directory-structure/server - API routes
+import { useMastery } from '~/composables/useMastery'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)

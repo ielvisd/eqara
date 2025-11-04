@@ -43,7 +43,7 @@
               <UButton
                 v-if="messages.length > 0"
                 icon="i-lucide-rotate-ccw"
-                color="neutral"
+                color="primary"
                 variant="ghost"
                 size="sm"
                 :disabled="isProcessing"
@@ -151,7 +151,7 @@
               </UButton>
               <UButton
                 icon="i-lucide-x"
-                color="neutral"
+                color="primary"
                 variant="ghost"
                 size="sm"
                 :disabled="isProcessing"

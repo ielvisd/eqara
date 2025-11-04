@@ -13,11 +13,6 @@ export default defineNuxtConfig({
       ]
     }
   },
-  // Nuxt UI configuration
-  ui: {
-    global: true,
-    icons: ['heroicons', 'lucide']
-  },
   css: ['~/assets/css/main.css'],
 
   // Disable SSR temporarily to test

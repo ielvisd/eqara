@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/ui": "^2.18.7",
+    "@nuxt/ui": "^4.1.0",
     "@supabase/supabase-js": "^2.75.0",
     "katex": "^0.16.25",
     "mathjs": "^15.0.0",
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@playwright/mcp": "github:microsoft/playwright-mcp",
     "chrome-devtools-mcp": "^0.9.0",
+    "tailwindcss": "^4.1.16",
     "vite-plugin-vue-mcp": "^0.3.2"
   }
 }

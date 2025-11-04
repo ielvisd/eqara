@@ -1,5 +1,6 @@
 // Knowledge Graph API: Get encompassed topics for a topic
 // Reference: nuxt.com/docs/guide/directory-structure/server - API routes
+import { useKnowledgeGraph } from '~/composables/useKnowledgeGraph'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)

@@ -2,41 +2,8 @@
 // Reference: pedagogy.md - Knowledge Graph structure for mastery learning
 // Reference: supabase.com/docs/guides/database - Postgres queries
 
-export interface Topic {
-  id: string
-  name: string
-  description: string | null
-  difficulty: number
-  xp_value: number
-  domain: string
-  created_at: string
-  updated_at: string
-}
-
-export interface TopicPrerequisite {
-  id: string
-  topic_id: string
-  prerequisite_id: string
-  prerequisite?: Topic
-}
-
-export interface TopicEncompassing {
-  id: string
-  topic_id: string
-  encompassed_id: string
-  encompassed?: Topic
-}
-
-export interface StudentMastery {
-  id: string
-  user_id: string | null
-  session_id: string | null
-  topic_id: string
-  mastery_level: number
-  last_practiced: string | null
-  next_review: string | null
-  topic?: Topic
-}
+import type { Topic, StudentMastery, TopicPrerequisite, TopicEncompassing } from './types'
+import { useSupabase } from './useSupabase'
 
 export const useKnowledgeGraph = () => {
   const supabase = useSupabase()

@@ -1,6 +1,7 @@
 // Mastery API: Check if student can advance to a topic
 // Reference: nuxt.com/docs/guide/directory-structure/server - API routes
 // Reference: pedagogy.md - 100% mastery before advancement
+import { useMastery } from '~/composables/useMastery'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)

@@ -2,20 +2,9 @@
 // Reference: pedagogy.md - Mastery Learning: 100% mastery before advancement
 // Reference: supabase.com/docs/guides/database - Postgres queries
 
-import type { Topic } from './useKnowledgeGraph'
-
-export interface StudentMastery {
-  id: string
-  user_id: string | null
-  session_id: string | null
-  topic_id: string
-  mastery_level: number // 0-100
-  last_practiced: string | null
-  next_review: string | null
-  created_at: string
-  updated_at: string
-  topic?: Topic
-}
+import type { StudentMastery, Topic } from './types'
+import { useSupabase } from './useSupabase'
+import { useKnowledgeGraph } from './useKnowledgeGraph'
 
 export interface MasteryUpdate {
   topicId: string
@@ -26,7 +15,14 @@ export interface MasteryUpdate {
 
 export const useMastery = () => {
   const supabase = useSupabase()
-  const { getSessionId } = useChatHistory()
+  
+  // Only use useChatHistory in client context
+  let getSessionId: (() => string) | undefined
+  if (process.client) {
+    // @ts-ignore - useChatHistory is auto-imported in client context
+    const chatHistory = useChatHistory()
+    getSessionId = chatHistory.getSessionId
+  }
 
   // Get mastery for a specific topic
   const getTopicMastery = async (
@@ -36,7 +32,7 @@ export const useMastery = () => {
   ): Promise<StudentMastery | null> => {
     try {
       if (!userId && !sessionId) {
-        sessionId = process.client ? getSessionId() : undefined
+        sessionId = process.client && getSessionId ? getSessionId() : undefined
         if (!sessionId) return null
       }
 
@@ -70,7 +66,7 @@ export const useMastery = () => {
   ): Promise<StudentMastery[]> => {
     try {
       if (!userId && !sessionId) {
-        sessionId = process.client ? getSessionId() : undefined
+        sessionId = process.client && getSessionId ? getSessionId() : undefined
         if (!sessionId) return []
       }
 
@@ -104,7 +100,7 @@ export const useMastery = () => {
   ): Promise<StudentMastery[]> => {
     try {
       const allMastery = await getAllMastery(userId, sessionId)
-      return allMastery.filter((m) => m.mastery_level >= 100)
+      return allMastery.filter((m) => (m.mastery_level ?? 0) >= 100)
     } catch (error) {
       console.error('Error fetching mastered topics:', error)
       return []
@@ -120,7 +116,7 @@ export const useMastery = () => {
   ): Promise<StudentMastery | null> => {
     try {
       if (!userId && !sessionId) {
-        sessionId = process.client ? getSessionId() : undefined
+        sessionId = process.client && getSessionId ? getSessionId() : undefined
         if (!sessionId) return null
       }
 
@@ -210,7 +206,7 @@ export const useMastery = () => {
     sessionId?: string
   ): Promise<boolean> => {
     const mastery = await getTopicMastery(topicId, userId, sessionId)
-    return mastery?.mastery_level >= 100 || false
+    return (mastery?.mastery_level ?? 0) >= 100
   }
 
   // Check if all prerequisites for a topic are mastered
@@ -220,7 +216,8 @@ export const useMastery = () => {
     sessionId?: string
   ): Promise<boolean> => {
     try {
-      const { getPrerequisites } = useKnowledgeGraph()
+      const kg = useKnowledgeGraph()
+      const { getPrerequisites } = kg
       const prerequisites = await getPrerequisites(topicId)
 
       // If no prerequisites, they're all "mastered" (none exist)
@@ -266,7 +263,8 @@ export const useMastery = () => {
     percentage: number
   }> => {
     try {
-      const { getTopicsByDomain } = useKnowledgeGraph()
+      const kg = useKnowledgeGraph()
+      const { getTopicsByDomain } = kg
       const topics = await getTopicsByDomain(domain)
       const allMastery = await getAllMastery(userId, sessionId)
 
@@ -320,7 +318,7 @@ export const useMastery = () => {
   ): Promise<boolean> => {
     try {
       if (!userId && !sessionId) {
-        sessionId = process.client ? getSessionId() : undefined
+        sessionId = process.client && getSessionId ? getSessionId() : undefined
         if (!sessionId) return false
       }
 

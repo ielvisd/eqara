@@ -1,5 +1,6 @@
 // Mastery API: Update mastery level for a topic
 // Reference: nuxt.com/docs/guide/directory-structure/server - API routes
+import { useMastery } from '~/composables/useMastery'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)

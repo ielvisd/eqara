@@ -1,6 +1,7 @@
 // Knowledge Graph API: Get knowledge frontier topics
 // Reference: nuxt.com/docs/guide/directory-structure/server - API routes
 // Reference: pedagogy.md - Knowledge Frontier: boundary between known/unknown
+import { useKnowledgeGraph } from '~/composables/useKnowledgeGraph'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
