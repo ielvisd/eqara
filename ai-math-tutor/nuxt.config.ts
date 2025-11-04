@@ -8,6 +8,21 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Eqara',
+      link: [
+        {
+          rel: 'preconnect',
+          href: 'https://fonts.googleapis.com'
+        },
+        {
+          rel: 'preconnect',
+          href: 'https://fonts.gstatic.com',
+          crossorigin: ''
+        },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap'
+        }
+      ],
       meta: [
         { name: 'description', content: 'Eqara - Your AI-powered math tutor that helps you learn through Socratic questioning and gamification' }
       ]

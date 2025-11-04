@@ -184,8 +184,18 @@ export const useKnowledgeGraph = () => {
   ): Promise<Topic[]> => {
     try {
       // Get all mastered topic IDs
+      // For diagnostic purposes, consider topics with 80%+ mastery as "mastered" for prerequisite checking
+      // This allows diagnostic results (80%) to properly feed into the frontier calculation
+      const { useMastery } = await import('./useMastery')
+      const mastery = useMastery()
       const masteredTopics = await getMasteredTopics(userId, sessionId)
-      const masteredTopicIds = masteredTopics.map((m) => m.topic_id)
+      const allMastery = await mastery.getAllMastery(userId, sessionId)
+      const masteredTopicIds = [
+        ...masteredTopics.map((m) => m.topic_id),
+        ...allMastery.filter((m) => (m.mastery_level ?? 0) >= 80).map((m) => m.topic_id)
+      ]
+      // Remove duplicates
+      const uniqueMasteredIds = [...new Set(masteredTopicIds)]
 
       // Get all topics
       const allTopics = await getAllTopics()
@@ -207,7 +217,7 @@ export const useKnowledgeGraph = () => {
         } else {
           // Check if all prerequisites are mastered
           const allPrerequisitesMastered = prerequisites.every((prereq) =>
-            masteredTopicIds.includes(prereq.id)
+            uniqueMasteredIds.includes(prereq.id)
           )
 
           if (allPrerequisitesMastered) {
