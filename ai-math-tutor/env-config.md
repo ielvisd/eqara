@@ -23,7 +23,7 @@ GROK_API_KEY=your-grok-api-key-here
 ANTHROPIC_API_KEY=your-anthropic-api-key-here
 
 # App Configuration
-NUXT_PUBLIC_APP_NAME=AI Math Tutor
+NUXT_PUBLIC_APP_NAME=Eqara
 NUXT_PUBLIC_APP_VERSION=1.0.0
 
 # Environment

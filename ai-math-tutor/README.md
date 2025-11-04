@@ -1,8 +1,8 @@
-# 🎓 AI Math Tutor - Socratic Learning Assistant
+# 🎓 Eqara - Socratic Learning Assistant
 
 *Transforming math homework into epic learning quests! 🚀*
 
-A web-based AI tutor that empowers students to solve math problems independently through Socratic questioning, supercharged with light videogame-like engagement. Inspired by Khan Academy's Khanmigo, it parses problems from text or screenshots and guides discovery without spoon-feeding answers.
+Eqara is a web-based AI tutor that empowers students to solve math problems independently through Socratic questioning, supercharged with light videogame-like engagement. Inspired by Khan Academy's Khanmigo, it parses problems from text or screenshots and guides discovery without spoon-feeding answers.
 
 ## 🌟 Current Status: Foundation Complete! ✅
 
@@ -127,11 +127,13 @@ vercel --prod
    CREATE TABLE gamestate (
      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
      user_id UUID REFERENCES auth.users(id),
+     session_id TEXT, -- For anonymous sessions
      xp INTEGER DEFAULT 0,
      level INTEGER DEFAULT 1,
      badges TEXT[] DEFAULT '{}',
      current_streak INTEGER DEFAULT 0,
-     updated_at TIMESTAMP DEFAULT NOW()
+     updated_at TIMESTAMP DEFAULT NOW(),
+     UNIQUE(user_id, session_id)
    );
    ```
 

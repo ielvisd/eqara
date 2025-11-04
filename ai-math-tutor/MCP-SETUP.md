@@ -4,7 +4,7 @@
 
 ## 🎯 What are MCP Tools?
 
-MCP (Model Context Protocol) tools allow AI assistants to access external documentation, APIs, and resources directly through standardized protocols. For our AI Math Tutor project, MCP tools provide instant access to official documentation and component libraries.
+MCP (Model Context Protocol) tools allow AI assistants to access external documentation, APIs, and resources directly through standardized protocols. For our Eqara project, MCP tools provide instant access to official documentation and component libraries.
 
 ## 🚀 Current Setup Status
 
@@ -182,7 +182,7 @@ node test-mcp.js
 
 Expected output:
 ```
-🚀 Testing MCP server connectivity for AI Math Tutor
+🚀 Testing MCP server connectivity for Eqara
 
 🧪 Testing Nuxt UI MCP server at https://ui.nuxt.com/mcp...
 ✅ Nuxt UI MCP server is responding

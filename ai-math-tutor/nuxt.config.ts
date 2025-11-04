@@ -5,6 +5,14 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@nuxt/ui'],
+  app: {
+    head: {
+      title: 'Eqara',
+      meta: [
+        { name: 'description', content: 'Eqara - Your AI-powered math tutor that helps you learn through Socratic questioning and gamification' }
+      ]
+    }
+  },
   // Nuxt UI configuration
   ui: {
     global: true,

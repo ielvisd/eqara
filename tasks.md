@@ -88,13 +88,13 @@ PR #1 (Foundation Quest)
 *The heart of our tutor! Setting up the chat system where students can have conversations with the AI, complete with XP rewards and basic gamification.*
 
 ### ✅ Acceptance Criteria
-- [ ] Multi-turn chat interface with message bubbles
-- [ ] Supabase realtime integration for chat persistence
-- [ ] Basic XP reward system (+5, +10, +15 XP messages)
-- [ ] Chat history stored and retrievable
-- [ ] Anonymous session support
-- [ ] Basic prompt engineering for Socratic responses
-- [ ] Chat UI responsive and accessible
+- [x] Multi-turn chat interface with message bubbles
+- [x] Supabase realtime integration for chat persistence
+- [x] Basic XP reward system (+5, +10, +15 XP messages)
+- [x] Chat history stored and retrievable
+- [x] Anonymous session support
+- [x] Basic prompt engineering for Socratic responses
+- [x] Chat UI responsive and accessible
 
 ### 🔧 Technical Details
 - Implement chat UI with Nuxt UI UCard components
