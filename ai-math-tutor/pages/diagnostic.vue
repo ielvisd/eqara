@@ -219,6 +219,39 @@
             </div>
           </div>
 
+          <!-- Mastered Topics List -->
+          <div 
+            v-if="placement.masteredTopics && placement.masteredTopics.length > 0"
+            class="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent rounded-xl p-6 md:p-8 border border-green-500/20 shadow-lg shadow-green-500/5"
+          >
+            <div class="flex items-center gap-3 mb-4">
+              <UIcon name="i-lucide-check-circle-2" class="size-5 text-green-400" />
+              <h4 class="text-xl font-bold text-white">Topics You Mastered</h4>
+              <UBadge color="success" variant="subtle" size="sm" class="ml-auto">
+                {{ placement.masteredTopics.length }}
+              </UBadge>
+            </div>
+            <p class="text-sm text-gray-400 mb-4">
+              These topics showed strong understanding during the diagnostic. Keep practicing to reach 100% mastery!
+            </p>
+            <div class="max-h-64 overflow-y-auto space-y-2 pr-2">
+              <div
+                v-for="topic in placement.masteredTopics"
+                :key="topic.id"
+                class="flex items-center gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10 hover:bg-green-500/10 transition-colors"
+              >
+                <UIcon name="i-lucide-check" class="size-5 text-green-400 flex-shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-white text-sm">{{ topic.name }}</p>
+                  <p class="text-xs text-gray-400">{{ topic.domain?.replace('_', ' ') || 'General' }}</p>
+                </div>
+                <UBadge color="success" variant="subtle" size="xs">
+                  {{ topic.masteryLevel || 80 }}%
+                </UBadge>
+              </div>
+            </div>
+          </div>
+
           <!-- Recommended Starting Point -->
           <div 
             v-if="placement.recommendedStartingPoint" 

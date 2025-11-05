@@ -8,7 +8,7 @@ import type { Topic, StudentMastery } from './types'
 
 export interface EnrichedTopic extends Topic {
   mastery: number
-  masteryStatus: 'mastered' | 'in-progress' | 'locked' | 'frontier'
+  masteryStatus: 'mastered' | 'near-mastery' | 'in-progress' | 'locked' | 'frontier'
   isFrontier: boolean
   prerequisitesMet: boolean
 }
@@ -31,12 +31,18 @@ export const useKGVisualization = () => {
   const mastery = useMastery()
 
   // Get mastery status based on percentage
+  // Pedagogical distinction:
+  // - 100% = True mastery (verified through practice)
+  // - 80-99% = Near mastery / Strong understanding (diagnostic mastery, needs verification)
+  // - 1-79% = In progress
+  // - 0% = Locked or not started
   const getMasteryStatus = (
     masteryLevel: number,
     prerequisitesMet: boolean,
     isFrontier: boolean
-  ): 'mastered' | 'in-progress' | 'locked' | 'frontier' => {
-    if (masteryLevel >= 100) return 'mastered'
+  ): 'mastered' | 'near-mastery' | 'in-progress' | 'locked' | 'frontier' => {
+    if (masteryLevel >= 100) return 'mastered' // True mastery - verified through practice
+    if (masteryLevel >= 80) return 'near-mastery' // Strong understanding (diagnostic mastery) - needs verification
     if (isFrontier && prerequisitesMet) return 'frontier'
     if (!prerequisitesMet) return 'locked'
     if (masteryLevel > 0) return 'in-progress'
@@ -47,14 +53,16 @@ export const useKGVisualization = () => {
   const getNodeColor = (status: EnrichedTopic['masteryStatus']): string => {
     switch (status) {
       case 'mastered':
-        return '#10b981' // Green
+        return '#10b981' // Green - True mastery (100%)
+      case 'near-mastery':
+        return '#06b6d4' // Cyan/Blue - Near mastery (80-99%) - strong understanding (distinct from green)
       case 'in-progress':
-        return '#f59e0b' // Yellow/Orange
+        return '#f59e0b' // Yellow/Orange - In progress (1-79%)
       case 'frontier':
-        return '#ec4899' // Pink
+        return '#ec4899' // Pink - Ready to learn
       case 'locked':
       default:
-        return '#6b7280' // Gray
+        return '#6b7280' // Gray - Locked or not started
     }
   }
 
@@ -62,14 +70,16 @@ export const useKGVisualization = () => {
   const getNodeIcon = (status: EnrichedTopic['masteryStatus']): string => {
     switch (status) {
       case 'mastered':
-        return 'i-lucide-check-circle'
+        return 'i-lucide-check-circle' // Full checkmark - verified mastery
+      case 'near-mastery':
+        return 'i-lucide-check-circle-2' // Partial checkmark - strong understanding
       case 'in-progress':
-        return 'i-lucide-clock'
+        return 'i-lucide-clock' // Clock - in progress
       case 'frontier':
-        return 'i-lucide-star'
+        return 'i-lucide-star' // Star - ready to learn
       case 'locked':
       default:
-        return 'i-lucide-lock'
+        return 'i-lucide-lock' // Lock - locked or not started
     }
   }
 
@@ -167,8 +177,8 @@ export const useKGVisualization = () => {
       const domainNode: TreeItem = {
         label: domain.charAt(0).toUpperCase() + domain.slice(1).replace(/_/g, ' '),
         icon: getNodeIcon(
-          sortedTopics.some((t) => t.masteryStatus === 'mastered')
-            ? 'mastered'
+          sortedTopics.some((t) => t.masteryStatus === 'mastered' || t.masteryStatus === 'near-mastery')
+            ? (sortedTopics.some((t) => t.masteryStatus === 'mastered') ? 'mastered' : 'near-mastery')
             : sortedTopics.some((t) => t.masteryStatus === 'frontier')
             ? 'frontier'
             : 'locked'
@@ -179,6 +189,7 @@ export const useKGVisualization = () => {
           icon: getNodeIcon(topic.masteryStatus),
           trailingIcon: topic.isFrontier ? 'i-lucide-sparkles' : undefined,
           class: topic.masteryStatus === 'mastered' ? 'text-green-400' : 
+                 topic.masteryStatus === 'near-mastery' ? 'text-cyan-500' :
                  topic.masteryStatus === 'frontier' ? 'text-pink-400' :
                  topic.masteryStatus === 'in-progress' ? 'text-yellow-400' : 
                  'text-gray-500',

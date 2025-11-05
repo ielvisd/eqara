@@ -184,16 +184,33 @@ export default defineEventHandler(async (event) => {
       } : null
     })
 
+    // Get mastered topics (topics answered correctly) with full topic details
+    const masteredTopicResults = results.filter(r => r.answerType === 'correct')
+    const masteredTopics = await Promise.all(
+      masteredTopicResults.map(async (result) => {
+        const topic = await kg.getTopic(result.topicId)
+        return topic ? {
+          id: topic.id,
+          name: topic.name,
+          difficulty: topic.difficulty,
+          domain: topic.domain,
+          masteryLevel: 80 // Diagnostic mastery level
+        } : null
+      })
+    )
+    const masteredTopicsList = masteredTopics.filter(t => t !== null)
+
     // Calculate placement summary
     // Note: "Mastered" in diagnostic means answered correctly (80% mastery), not 100%
     // True mastery (100%) requires practice and verification
     const placementSummary = {
       totalTopicsTested: results.length,
-      topicsMastered: results.filter(r => r.answerType === 'correct').length,
+      topicsMastered: masteredTopicResults.length,
       topicsUnknown: results.filter(r => r.answerType === 'idontknow').length,
       topicsInProgress: results.filter(r => r.answerType === 'incorrect').length,
       frontierTopics: frontier.length,
       recommendedStartingPoint: recommendedTopic,
+      masteredTopics: masteredTopicsList, // Array of topic objects that were mastered
       note: 'Topics marked as "Mastered" are at 80% mastery from diagnostic. Full mastery (100%) requires practice verification.'
     }
 

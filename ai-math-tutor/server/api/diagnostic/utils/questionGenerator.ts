@@ -141,21 +141,37 @@ export async function generateDiagnosticQuestion(topic: any): Promise<any> {
     availableTemplates = availableTemplates.filter(t => !usedForTopic.has(t.question))
   }
   
-  // If all topic-specific questions used, fall back to domain templates
+  // If all topic-specific questions used, reset and cycle through them again
+  // DO NOT fall back to domain templates - they may contain questions from other topics
   if (availableTemplates.length === 0) {
-    availableTemplates = templates[topic.domain] || templates.arithmetic
-    // Filter domain templates too
-    availableTemplates = availableTemplates.filter(t => !usedForTopic.has(t.question))
+    console.log('⚠️ [QUESTION GENERATOR] All questions used for topic, resetting:', topic.name)
+    usedForTopic.clear()
+    availableTemplates = topicSpecificTemplates[topic.name] || []
   }
   
-  // If still no questions available, reset and use all templates
+  // If still no questions available (topic not in templates), this is an error
   if (availableTemplates.length === 0) {
-    usedForTopic.clear()
-    availableTemplates = topicSpecificTemplates[topic.name] || templates[topic.domain] || templates.arithmetic
+    console.error('🚨 [QUESTION GENERATOR] No questions available for topic:', topic.name)
+    throw new Error(`No questions available for topic: ${topic.name}. Please add questions to topicSpecificTemplates.`)
   }
   
   const randomIndex = Math.floor(Math.random() * availableTemplates.length)
   const selectedQuestion = availableTemplates[randomIndex]
+  
+  // Validate that the selected question matches the topic
+  // Check if question contains topic-specific keywords or operations
+  const topicNameLower = topic.name.toLowerCase()
+  const questionText = selectedQuestion.question.toLowerCase()
+  
+  // Basic validation: ensure question type matches topic
+  const isValid = validateQuestionTopicMatch(topicNameLower, questionText, selectedQuestion.question)
+  
+  if (!isValid) {
+    console.warn('⚠️ [QUESTION GENERATOR] Question may not match topic:', {
+      topic: topic.name,
+      question: selectedQuestion.question
+    })
+  }
   
   // Mark this question as used for this topic
   usedForTopic.add(selectedQuestion.question)
@@ -163,10 +179,33 @@ export async function generateDiagnosticQuestion(topic: any): Promise<any> {
   console.log('✅ [QUESTION GENERATOR] Selected question:', {
     topicName: topic.name,
     question: selectedQuestion.question,
-    usedCount: usedForTopic.size
+    usedCount: usedForTopic.size,
+    isValid
   })
   
   return selectedQuestion
+}
+
+// Helper function to validate question matches topic
+function validateQuestionTopicMatch(topicName: string, questionText: string, questionFull: string): boolean {
+  // Check for topic-specific keywords
+  if (topicName.includes('addition') || topicName.includes('add')) {
+    return questionText.includes('+') || questionFull.includes('+')
+  }
+  if (topicName.includes('subtraction') || topicName.includes('subtract')) {
+    return questionText.includes('-') || questionFull.includes('-')
+  }
+  if (topicName.includes('multiplication') || topicName.includes('multiply')) {
+    return questionText.includes('×') || questionText.includes('*') || questionFull.includes('×') || questionFull.includes('*')
+  }
+  if (topicName.includes('division') || topicName.includes('divide')) {
+    return questionText.includes('÷') || questionText.includes('/') || questionFull.includes('÷') || questionFull.includes('/')
+  }
+  if (topicName.includes('order of operations')) {
+    return questionText.includes('×') || questionText.includes('+') || questionText.includes('-') || questionText.includes('(')
+  }
+  // For other topics, assume valid if we got here (from topic-specific templates)
+  return true
 }
 
 // Generate quiz question (reuse diagnostic logic with adjusted difficulty)

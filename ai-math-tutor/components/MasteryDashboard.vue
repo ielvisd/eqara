@@ -239,6 +239,7 @@ defineExpose({ refresh })
                   :class="[
                     'size-5',
                     item.mastery_level >= 100 ? 'text-green-400' :
+                    item.mastery_level >= 80 ? 'text-cyan-500' :
                     item.mastery_level > 0 ? 'text-yellow-400' :
                     'text-gray-500'
                   ]"
