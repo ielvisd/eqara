@@ -157,11 +157,21 @@ export const useChatHistory = () => {
       const { data: { user } } = await supabase.auth.getUser()
       
       // Delete all messages for this session
-      const { error } = await supabase
+      // For anonymous users, only filter by session_id
+      // For logged-in users, filter by both session_id and user_id
+      let query = supabase
         .from('chat_history')
         .delete()
         .eq('session_id', sessionId)
-        .eq('user_id', user?.id || null)
+      
+      if (user?.id) {
+        query = query.eq('user_id', user.id)
+      } else {
+        // For anonymous users, filter by NULL user_id using is.null
+        query = query.is('user_id', null)
+      }
+      
+      const { error } = await query
 
       if (error) {
         // 404 means table doesn't exist - this is okay for first-time setup

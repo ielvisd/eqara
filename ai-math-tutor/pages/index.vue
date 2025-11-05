@@ -41,6 +41,16 @@
                 {{ gameState.xp }} XP
               </div>
               <UButton
+                icon="i-lucide-brain"
+                color="primary"
+                variant="ghost"
+                size="sm"
+                class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
+                @click="handleOpenKGSidebar"
+              >
+                <span class="hidden sm:inline">Knowledge Graph</span>
+              </UButton>
+              <UButton
                 v-if="messages.length > 0"
                 icon="i-lucide-rotate-ccw"
                 color="primary"
@@ -324,7 +334,7 @@
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-400">Problems Solved</span>
-              <span class="font-semibold text-white">{{ messages.filter(m => m.role === 'assistant').length }}</span>
+              <span class="font-semibold text-white">{{ messages.filter((m: typeof messages.value[0]) => m.role === 'assistant').length }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-400">XP Earned</span>
@@ -376,11 +386,21 @@
         </div>
       </div>
     </UContainer>
+
+    <!-- Knowledge Graph Sidebar -->
+    <ClientOnly>
+      <KGSidebar
+        v-model="showKGSidebar"
+        :user-id="undefined"
+        :session-id="sessionId"
+        @topic-select="handleTopicSelect"
+      />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
+// ref, watch, computed, onMounted, onUnmounted are auto-imported by Nuxt
 
 // useToast is auto-imported by Nuxt UI module
 const toast = useToast()
@@ -410,6 +430,7 @@ const isProcessing = ref(false)
 const isDragging = ref(false)
 const chatStatus = ref<'ready' | 'submitted' | 'streaming' | 'error'>('ready')
 const sessionId = ref<string>('')
+const showKGSidebar = ref(false)
 let unsubscribeChat: (() => void) | null = null
 
 // Computed to check if file exists
@@ -427,7 +448,7 @@ const getFile = computed((): File | null => {
 
 // Convert messages to UChatMessages format
 const chatMessages = computed(() => {
-  return messages.value.map(msg => ({
+  return messages.value.map((msg: typeof messages.value[0]) => ({
     id: msg.id,
     role: msg.role,
     parts: [{ type: 'text' as const, text: msg.content }],
@@ -471,7 +492,7 @@ const hasVerification = computed(() => {
   if (!finalSolution.value) return false
   // Only look for substitution/verification mentions in the current problem messages
   const currentProblemMessages = messages.value.slice(currentProblemStart.value)
-  const hasSubstitution = currentProblemMessages.some(msg => {
+  const hasSubstitution = currentProblemMessages.some((msg: typeof messages.value[0]) => {
     const content = (msg.content || '').toLowerCase()
     return content.includes('substitut') || 
            content.includes('verify') ||
@@ -653,7 +674,7 @@ const handleDrop = (event: DragEvent) => {
 }
 
 // Watch files for validation
-watch(files, (newFile) => {
+watch(files, (newFile: File | File[] | null) => {
   if (!newFile) return
   
   const file = Array.isArray(newFile) ? newFile[0] : newFile
@@ -832,13 +853,13 @@ const processText = async () => {
     // Prepare chat history for context
     const chatHistory = messages.value
       .slice(0, -1) // Exclude current message
-      .map(msg => ({
+      .map((msg: typeof messages.value[0]) => ({
         role: msg.role,
         content: msg.content
       }))
 
     // Check if there's an extracted problem from vision
-    const extractedProblem = messages.value.find(m => 
+    const extractedProblem = messages.value.find((m: typeof messages.value[0]) => 
       m.role === 'assistant' && m.content.includes('I found this problem')
     )?.content.match(/\*\*(.+?)\*\*/)?.[1]
 
@@ -963,7 +984,7 @@ const resetConversation = async () => {
   // Subscribe to new session
   if (process.client) {
     unsubscribeChat = subscribeToChat(sessionId.value, (newMessage) => {
-      if (!messages.value.find(m => m.id === newMessage.id)) {
+      if (!messages.value.find((m: typeof messages.value[0]) => m.id === newMessage.id)) {
         messages.value.push(newMessage)
       }
     })
@@ -977,11 +998,37 @@ const resetConversation = async () => {
   })
 }
 
+// Handle opening KG sidebar
+const handleOpenKGSidebar = () => {
+  showKGSidebar.value = true
+}
+
+// Handle topic selection from KG sidebar
+const handleTopicSelect = (topicId: string) => {
+  // Close the sidebar
+  showKGSidebar.value = false
+  
+  // Add a message about the selected topic
+  toast.add({
+    title: 'Topic Selected',
+    description: 'Ask me a question about this topic!',
+    color: 'success',
+    icon: 'i-lucide-book-open'
+  })
+}
+
 // Initialize chat on mount
 onMounted(async () => {
   if (process.client) {
     // Get or create session ID
     sessionId.value = getSessionId()
+    
+    // Preload knowledge graph data in the background
+    const kgViz = useKGVisualization()
+    kgViz.preloadKGData(undefined, sessionId.value).catch(err => {
+      console.warn('Failed to preload KG data:', err)
+      // Non-blocking - continue even if preload fails
+    })
     
     // Load existing chat history
     const history = await loadChatHistory(sessionId.value)
@@ -998,7 +1045,7 @@ onMounted(async () => {
     // Subscribe to realtime chat updates
     unsubscribeChat = subscribeToChat(sessionId.value, (newMessage) => {
       // Check if message already exists
-      if (!messages.value.find(m => m.id === newMessage.id)) {
+      if (!messages.value.find((m: typeof messages.value[0]) => m.id === newMessage.id)) {
         messages.value.push(newMessage)
       }
     })

@@ -12,6 +12,10 @@
   "dependencies": {
     "@nuxt/ui": "^4.1.0",
     "@supabase/supabase-js": "^2.75.0",
+    "@vue-flow/background": "^1.3.2",
+    "@vue-flow/controls": "^1.1.3",
+    "@vue-flow/core": "^1.47.0",
+    "@vue-flow/minimap": "^1.5.4",
     "katex": "^0.16.25",
     "mathjs": "^15.0.0",
     "nuxt": "^4.1.3",

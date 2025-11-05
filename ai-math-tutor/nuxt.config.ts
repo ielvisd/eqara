@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+// @ts-ignore - vite-plugin-vue-mcp may not have type definitions
 import { VueMcp } from 'vite-plugin-vue-mcp'
 
 export default defineNuxtConfig({
@@ -28,7 +29,11 @@ export default defineNuxtConfig({
       ]
     }
   },
-  css: ['~/assets/css/main.css'],
+  css: [
+    '~/assets/css/main.css',
+    '@vue-flow/core/dist/style.css',
+    '@vue-flow/core/dist/theme-default.css'
+  ],
 
   // Disable SSR temporarily to test
   ssr: false,
@@ -38,6 +43,7 @@ export default defineNuxtConfig({
     grokApiKey: process.env.GROK_API_KEY,
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY, // Service role key for server-side queries
     // Public config (client-side accessible)
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
