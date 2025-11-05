@@ -199,8 +199,8 @@
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <div class="text-center p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
-                <div class="text-3xl md:text-4xl font-bold text-pink-400 mb-2">{{ placement.topicsMastered }}</div>
-                <div class="text-xs md:text-sm text-gray-400 font-medium">Mastered</div>
+                <div class="text-3xl md:text-4xl font-bold text-pink-400 mb-2">{{ placement.topicsWithStrongUnderstanding ?? placement.topicsMastered }}</div>
+                <div class="text-xs md:text-sm text-gray-400 font-medium">Strong Understanding</div>
               </div>
               <div class="text-center p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
                 <div class="text-3xl md:text-4xl font-bold text-yellow-400 mb-2">{{ placement.topicsInProgress }}</div>
@@ -217,24 +217,24 @@
             </div>
           </div>
 
-          <!-- Mastered Topics List -->
+          <!-- Topics with Strong Understanding List -->
           <div 
-            v-if="placement.masteredTopics && placement.masteredTopics.length > 0"
+            v-if="(placement.strongUnderstandingTopics && placement.strongUnderstandingTopics.length > 0) || (placement.masteredTopics && placement.masteredTopics.length > 0)"
             class="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent rounded-xl p-6 md:p-8 border border-green-500/20 shadow-lg shadow-green-500/5"
           >
             <div class="flex items-center gap-3 mb-4">
               <UIcon name="i-lucide-check-circle-2" class="size-5 text-green-400" />
-              <h4 class="text-xl font-bold text-white">Topics You Mastered</h4>
+              <h4 class="text-xl font-bold text-white">Topics with Strong Understanding</h4>
               <UBadge color="success" variant="subtle" size="sm" class="ml-auto">
-                {{ placement.masteredTopics.length }}
+                {{ (placement.strongUnderstandingTopics ?? placement.masteredTopics)?.length }}
               </UBadge>
             </div>
             <p class="text-sm text-gray-400 mb-4">
-              These topics showed strong understanding during the diagnostic. Keep practicing to reach 100% mastery!
+              <span class="font-semibold text-yellow-400">Complete these to 100% mastery before advancing!</span> These topics showed strong understanding (80%) during the diagnostic, but true mastery requires practice verification. Finish these first to build a solid foundation.
             </p>
             <div class="max-h-64 overflow-y-auto space-y-2 pr-2">
               <div
-                v-for="topic in placement.masteredTopics"
+                v-for="topic in (placement.strongUnderstandingTopics ?? placement.masteredTopics)"
                 :key="topic.id"
                 class="flex items-center gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10 hover:bg-green-500/10 transition-colors"
               >
@@ -243,8 +243,8 @@
                   <p class="font-semibold text-white text-sm">{{ topic.name }}</p>
                   <p class="text-xs text-gray-400">{{ topic.domain?.replace('_', ' ') || 'General' }}</p>
                 </div>
-                <UBadge color="success" variant="subtle" size="xs">
-                  {{ topic.masteryLevel || 80 }}%
+                <UBadge color="warning" variant="subtle" size="xs" class="font-semibold">
+                  {{ topic.masteryLevel || 80 }}% → 100%
                 </UBadge>
               </div>
             </div>
@@ -262,7 +262,13 @@
                   Recommended Starting Point
                 </p>
                 <p class="text-lg font-bold text-white mb-2">{{ placement.recommendedStartingPoint.name }}</p>
-                <p class="text-sm text-gray-400 leading-relaxed">{{ placement.recommendedStartingPoint.description }}</p>
+                <p class="text-sm text-gray-400 leading-relaxed mb-2">{{ placement.recommendedStartingPoint.description }}</p>
+                <div v-if="placement.recommendedStartingPoint.masteryLevel !== undefined && placement.recommendedStartingPoint.masteryLevel >= 80 && placement.recommendedStartingPoint.masteryLevel < 100" class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <p class="text-xs text-yellow-300 font-medium">
+                    <UIcon name="i-lucide-info" class="size-3 inline mr-1" />
+                    You're at {{ placement.recommendedStartingPoint.masteryLevel }}% mastery. Complete this topic to 100% before moving to new topics (per mastery learning principles).
+                  </p>
+                </div>
               </div>
             </div>
           </div>

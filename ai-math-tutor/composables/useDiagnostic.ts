@@ -31,11 +31,15 @@ export interface DiagnosticSession {
 
 export interface PlacementSummary {
   totalTopicsTested: number
-  topicsMastered: number
+  topicsWithStrongUnderstanding?: number // New field for 80% mastery topics
+  topicsMastered: number // Legacy field (deprecated - use topicsWithStrongUnderstanding)
   topicsUnknown: number
   topicsInProgress: number
   frontierTopics: number
   recommendedStartingPoint: any | null
+  strongUnderstandingTopics?: any[] // New field for 80% mastery topic objects
+  masteredTopics?: any[] // Legacy field (deprecated - use strongUnderstandingTopics)
+  note?: string // Explanation about mastery levels
 }
 
 export const useDiagnostic = () => {

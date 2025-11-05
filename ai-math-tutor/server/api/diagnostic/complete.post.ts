@@ -136,38 +136,65 @@ export default defineEventHandler(async (event) => {
       }))
     })
 
-    // Get tested topic IDs to prioritize untested topics
+    // Get tested topic IDs and mastery levels
     const testedTopicIds = results.map(r => r.topicId)
+    const allMastery = await mastery.getAllMastery(userId, sessionId)
+    const masteryMap = new Map(allMastery.map(m => [m.topic_id, m.mastery_level || 0]))
+    
     console.log('✅ [DIAGNOSTIC COMPLETE] Tested topic IDs:', testedTopicIds)
     
     // Sort frontier to prioritize:
-    // 1. Topics that haven't been tested yet (no mastery record)
-    // 2. Root topics (no prerequisites) - these are foundational
-    // 3. Topics with lower difficulty
+    // 1. Topics with 80% mastery (need completion to 100%) - HIGHEST PRIORITY
+    // 2. Untested root topics (no prerequisites) - foundational starting points
+    // 3. Other untested frontier topics
+    // 4. Topics with lower difficulty within same priority group
     const sortedFrontier = await Promise.all(
       frontier.map(async (topic) => {
         const wasTested = testedTopicIds.includes(topic.id)
+        const masteryLevel = masteryMap.get(topic.id) || 0
+        const isNearlyMastered = masteryLevel >= 80 && masteryLevel < 100
         const prerequisites = await kg.getPrerequisites(topic.id)
         const isRootTopic = prerequisites.length === 0
         return {
           topic,
           wasTested,
           isRootTopic,
+          isNearlyMastered,
+          masteryLevel,
           difficulty: topic.difficulty || 999
         }
       })
     )
     
-    // Sort: untested root topics first, then untested non-root, then tested topics
+    // Sort: Nearly mastered (80%) topics first, then untested root topics, then other untested, then by difficulty
     sortedFrontier.sort((a, b) => {
+      // Priority 1: Nearly mastered topics (80% < 100%) come first
+      if (a.isNearlyMastered && !b.isNearlyMastered) return -1
+      if (!a.isNearlyMastered && b.isNearlyMastered) return 1
+      
+      // If both are nearly mastered, prefer higher mastery level (closer to 100%)
+      if (a.isNearlyMastered && b.isNearlyMastered) {
+        return b.masteryLevel - a.masteryLevel
+      }
+      
+      // Priority 2: Untested root topics
       if (!a.wasTested && a.isRootTopic && (b.wasTested || !b.isRootTopic)) return -1
       if (!b.wasTested && b.isRootTopic && (a.wasTested || !a.isRootTopic)) return 1
+      
+      // Priority 3: Other untested topics
       if (!a.wasTested && b.wasTested) return -1
       if (a.wasTested && !b.wasTested) return 1
+      
+      // Within same priority, sort by difficulty
       return a.difficulty - b.difficulty
     })
     
-    const recommendedTopic = sortedFrontier.length > 0 ? sortedFrontier[0].topic : null
+    // Get recommended topic with mastery level
+    const topFrontierItem = sortedFrontier.length > 0 ? sortedFrontier[0] : null
+    const recommendedTopic = topFrontierItem ? {
+      ...topFrontierItem.topic,
+      masteryLevel: topFrontierItem.masteryLevel
+    } : null
     
     console.log('🎯 [DIAGNOSTIC COMPLETE] Recommendation logic:', {
       sortedFrontierCount: sortedFrontier.length,
@@ -175,43 +202,49 @@ export default defineEventHandler(async (event) => {
         name: sf.topic.name,
         wasTested: sf.wasTested,
         isRootTopic: sf.isRootTopic,
+        isNearlyMastered: sf.isNearlyMastered,
+        masteryLevel: sf.masteryLevel,
         difficulty: sf.difficulty
       })),
       recommendedTopic: recommendedTopic ? {
         id: recommendedTopic.id,
         name: recommendedTopic.name,
-        difficulty: recommendedTopic.difficulty
+        difficulty: recommendedTopic.difficulty,
+        masteryLevel: recommendedTopic.masteryLevel
       } : null
     })
 
-    // Get mastered topics (topics answered correctly) with full topic details
-    const masteredTopicResults = results.filter(r => r.answerType === 'correct')
-    const masteredTopics = await Promise.all(
-      masteredTopicResults.map(async (result) => {
+    // Get topics with strong understanding (topics answered correctly = 80% mastery) with full topic details
+    const strongUnderstandingResults = results.filter(r => r.answerType === 'correct')
+    const strongUnderstandingTopics = await Promise.all(
+      strongUnderstandingResults.map(async (result) => {
         const topic = await kg.getTopic(result.topicId)
         return topic ? {
           id: topic.id,
           name: topic.name,
           difficulty: topic.difficulty,
           domain: topic.domain,
-          masteryLevel: 80 // Diagnostic mastery level
+          masteryLevel: 80 // Diagnostic mastery level - needs practice to reach 100%
         } : null
       })
     )
-    const masteredTopicsList = masteredTopics.filter(t => t !== null)
+    const strongUnderstandingTopicsList = strongUnderstandingTopics.filter(t => t !== null)
 
     // Calculate placement summary
-    // Note: "Mastered" in diagnostic means answered correctly (80% mastery), not 100%
-    // True mastery (100%) requires practice and verification
+    // Note: Topics with "Strong Understanding" are at 80% mastery from diagnostic, not 100%
+    // True mastery (100%) requires practice and verification per pedagogy.md
     const placementSummary = {
       totalTopicsTested: results.length,
-      topicsMastered: masteredTopicResults.length,
+      topicsWithStrongUnderstanding: strongUnderstandingResults.length,
       topicsUnknown: results.filter(r => r.answerType === 'idontknow').length,
       topicsInProgress: results.filter(r => r.answerType === 'incorrect').length,
       frontierTopics: frontier.length,
       recommendedStartingPoint: recommendedTopic,
-      masteredTopics: masteredTopicsList, // Array of topic objects that were mastered
-      note: 'Topics marked as "Mastered" are at 80% mastery from diagnostic. Full mastery (100%) requires practice verification.'
+      strongUnderstandingTopics: strongUnderstandingTopicsList, // Array of topic objects with 80% mastery
+      // Legacy field for backwards compatibility (deprecated - use strongUnderstandingTopics)
+      topicsMastered: strongUnderstandingResults.length,
+      masteredTopics: strongUnderstandingTopicsList,
+      note: 'Topics with "Strong Understanding" are at 80% mastery from diagnostic. Complete these to 100% mastery before advancing to new topics (per mastery learning principles).'
     }
 
     return {
