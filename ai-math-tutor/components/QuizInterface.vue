@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-black py-8">
-    <UContainer class="py-8 max-w-4xl relative z-10">
+  <div class="py-6">
+    <div class="max-w-4xl mx-auto px-4">
       <!-- Header -->
       <div class="text-center mb-8">
-        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-purple-500 to-pink-600 bg-clip-text text-transparent mb-4">
+        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent mb-4">
           🎯 Practice Quiz
         </h1>
         <p class="text-lg text-gray-300">
@@ -12,15 +12,15 @@
       </div>
 
       <!-- Loading State -->
-      <UCard v-if="loading" class="bg-black/90 border border-purple-500/20">
+      <UCard v-if="loading" class="bg-black/90 border border-pink-500/20">
         <div class="text-center py-12">
-          <UIcon name="i-lucide-loader-2" class="size-12 text-purple-400 animate-spin mx-auto mb-4" />
+          <UIcon name="i-lucide-loader-2" class="size-12 text-pink-400 animate-spin mx-auto mb-4" />
           <p class="text-gray-300">Generating your quiz...</p>
         </div>
       </UCard>
 
       <!-- Quiz Setup (before starting) - Hide in review mode -->
-      <UCard v-else-if="!quizStarted && !showResults && !reviewMode" class="bg-black/90 border border-purple-500/20">
+      <UCard v-else-if="!quizStarted && !showResults && !reviewMode" class="bg-black/90 border border-pink-500/20">
         <template #header>
           <h3 class="text-2xl font-bold text-white">Quiz Options</h3>
         </template>
@@ -45,22 +45,22 @@
           </div>
 
           <!-- Timed Mode -->
-          <div class="flex items-center justify-between p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+          <div class="flex items-center justify-between p-4 bg-pink-500/10 rounded-lg border border-pink-500/20">
             <div class="flex items-center gap-3">
-              <UIcon name="i-lucide-timer" class="size-5 text-purple-400" />
+              <UIcon name="i-lucide-timer" class="size-5 text-pink-400" />
               <div>
                 <p class="text-sm font-medium text-white">Timed Mode</p>
                 <p class="text-xs text-gray-400">Challenge yourself with a time limit per question</p>
               </div>
             </div>
-            <UToggle v-model="isTimed" />
+            <USwitch v-model="isTimed" />
           </div>
 
           <!-- Start Button -->
           <UButton
-            color="primary"
+            color="pink"
             size="lg"
-            class="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+            class="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
             @click="startQuiz"
           >
             Start Quiz 🚀
@@ -69,7 +69,7 @@
       </UCard>
 
       <!-- Quiz In Progress -->
-      <UCard v-else-if="quizStarted && !showResults && currentQuestion" class="bg-black/90 border border-purple-500/20">
+      <UCard v-else-if="quizStarted && !showResults && currentQuestion" class="bg-black/90 border border-pink-500/20">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-xl font-bold text-white">
@@ -93,7 +93,7 @@
         <!-- Progress Bar -->
         <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-6">
           <div 
-            class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
+            class="h-full bg-gradient-to-r from-pink-500 to-pink-600 rounded-full transition-all duration-300"
             :style="{ width: `${progress}%` }"
           ></div>
         </div>
@@ -116,7 +116,7 @@
       </UCard>
 
       <!-- Results -->
-      <UCard v-else-if="showResults && quizResult" class="bg-black/90 border border-purple-500/20">
+      <UCard v-else-if="showResults && quizResult" class="bg-black/90 border border-pink-500/20">
         <QuizResults
           :accuracy="quizResult.accuracy"
           :total-questions="quizResult.totalQuestions"
@@ -143,7 +143,7 @@
           </UButton>
         </div>
       </UCard>
-    </UContainer>
+    </div>
   </div>
 </template>
 
@@ -264,7 +264,7 @@ const finishQuiz = async () => {
     
     // Award XP
     const xpEarned = Math.floor(quizResult.value.accuracy / 10) * 10 + 20
-    await addXP(xpEarned, `Quiz completed: ${quizResult.value.accuracy.toFixed(0)}% accuracy`)
+    await addXP(xpEarned)
 
     showResults.value = true
     quizStarted.value = false

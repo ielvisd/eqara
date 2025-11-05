@@ -1,49 +1,49 @@
 <template>
-  <UModal v-model="isOpen" :ui="{ width: 'max-w-md' }">
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-bold text-white">
-            {{ emailSent ? '📧 Check Your Email' : '🎓 Save Your Progress' }}
-          </h3>
-          <UButton
-            icon="i-lucide-x"
-            color="gray"
-            variant="ghost"
-            size="sm"
-            @click="isOpen = false"
-          />
-        </div>
-      </template>
-
-      <!-- Email sent confirmation -->
-      <div v-if="emailSent" class="space-y-4 text-center py-6">
-        <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
-          <UIcon name="i-lucide-mail-check" class="size-8 text-green-400" />
+  <UModal 
+    v-model:open="isOpen" 
+    :title="emailSent ? '📧 Check Your Email' : '💾 Save Your Progress'"
+    :ui="{
+      content: 'bg-black border border-pink-500/20 shadow-lg shadow-pink-500/20',
+      header: 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-b border-pink-500/20',
+      body: 'bg-black',
+      footer: 'bg-black border-t border-pink-500/20',
+      title: 'text-white font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent'
+    }"
+  >
+    <!-- Email sent confirmation -->
+    <template v-if="emailSent" #body>
+      <div class="space-y-4 text-center py-6">
+        <div class="w-16 h-16 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto border border-pink-500/30">
+          <UIcon name="i-lucide-mail-check" class="size-8 text-pink-400" />
         </div>
         <div>
-          <p class="text-lg font-semibold text-white mb-2">Magic link sent!</p>
-          <p class="text-sm text-gray-400 mb-4">
+          <p class="text-lg font-semibold text-white mb-2">Magic link sent! ✨</p>
+          <p class="text-sm text-gray-300 mb-4">
             We've sent a magic link to <span class="text-pink-400 font-medium">{{ email }}</span>
           </p>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-gray-400">
             Click the link in your email to sign in and save your progress. You can close this window.
           </p>
         </div>
-        <UButton
-          color="gray"
-          variant="ghost"
-          class="w-full"
-          @click="resetForm"
-        >
-          Use a different email
-        </UButton>
       </div>
+    </template>
 
-      <!-- Email input form -->
-      <div v-else class="space-y-4 py-4">
+    <template v-if="emailSent" #footer>
+      <UButton
+        color="gray"
+        variant="ghost"
+        class="w-full"
+        @click="resetForm"
+      >
+        Use a different email
+      </UButton>
+    </template>
+
+    <!-- Email input form -->
+    <template v-else #body>
+      <div class="space-y-4 py-4">
         <div class="text-center mb-4">
-          <p class="text-sm text-gray-400">
+          <p class="text-sm text-gray-300">
             {{ hasAnonymousData ? 'Your current progress will be saved to your account' : 'Sign in or create an account with just your email' }}
           </p>
         </div>
@@ -59,7 +59,7 @@
               type="email"
               required
               placeholder="your.email@example.com"
-              class="w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              class="w-full px-4 py-3 bg-black/80 border border-pink-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
               :disabled="loading"
             />
           </div>
@@ -77,7 +77,7 @@
             size="lg"
             :loading="loading"
             :disabled="loading || !email"
-            class="w-full"
+            class="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white"
           >
             <template #leading>
               <UIcon name="i-lucide-sparkles" />
@@ -87,13 +87,13 @@
         </form>
 
         <div class="text-center">
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-gray-400">
             No password required • We'll send you a secure link to sign in
           </p>
         </div>
 
         <!-- Info about what gets saved -->
-        <div v-if="hasAnonymousData" class="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 mt-4">
+        <div v-if="hasAnonymousData" class="bg-gradient-to-br from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-lg p-4 mt-4">
           <div class="flex items-start gap-3">
             <UIcon name="i-lucide-info" class="size-5 text-pink-400 flex-shrink-0 mt-0.5" />
             <div class="text-sm text-pink-200">
@@ -108,7 +108,7 @@
           </div>
         </div>
       </div>
-    </UCard>
+    </template>
   </UModal>
 </template>
 
@@ -132,7 +132,9 @@ const emailSent = ref(false)
 
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => {
+    emit('update:modelValue', value)
+  }
 })
 
 const handleSubmit = async () => {

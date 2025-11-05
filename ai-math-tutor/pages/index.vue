@@ -8,35 +8,86 @@
     </div>
 
     <UContainer class="py-8 max-w-7xl relative z-10">
-      <!-- Header -->
-      <div class="text-center mb-8">
-        <h1 class="text-5xl md:text-6xl font-bold bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent mb-4 animate-fade-in">
-          🎓 Eqara
-        </h1>
-
-        <p class="text-lg text-gray-300 max-w-2xl mx-auto">
-          Upload a math problem or start chatting with your AI tutor
-        </p>
-      </div>
-
       <!-- Side-by-side layout: Chat and Problem/Step -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Chat Interface (2/3 width on large screens) -->
         <div class="lg:col-span-2">
           <UCard class="shadow-2xl border border-pink-500/20 bg-black/90 backdrop-blur-sm">
         <template #header>
-          <div class="flex items-center justify-between flex-wrap gap-4">
+          <div class="flex flex-col gap-4">
+            <!-- Logo and Title -->
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg shadow-pink-500/50">
                 <UIcon name="i-lucide-graduation-cap" class="size-5 text-white" />
               </div>
               <div>
-                <h3 class="text-2xl font-bold text-white">🎓 Eqara</h3>
+                <h3 class="text-2xl font-bold bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent">Eqara</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Upload a math problem or start chatting with your AI tutor</p>
               </div>
             </div>
-            <div class="flex items-center gap-4">
+            
+            <!-- Centered Action Buttons and Stats -->
+            <div class="flex flex-col items-center gap-4">
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2 flex-wrap justify-center">
+                <UButton
+                  icon="i-lucide-refresh-cw"
+                  color="gray"
+                  variant="ghost"
+                  size="sm"
+                  class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
+                  @click="resetConversation"
+                  :disabled="messages.length === 0"
+                  aria-label="Start a new chat conversation"
+                >
+                  New Chat
+                </UButton>
+                
+                <UButton
+                  icon="i-lucide-brain"
+                  color="primary"
+                  variant="ghost"
+                  size="sm"
+                  class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
+                  @click="handleOpenKGSidebar"
+                  @mouseenter="handleKGButtonHover"
+                  aria-label="Open knowledge graph"
+                >
+                  Knowledge Graph
+                </UButton>
+
+                <!-- Auth UI -->
+                <div v-if="isAuthenticated" class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
+                    <UIcon name="i-lucide-user-check" class="size-3.5" />
+                    <span class="whitespace-nowrap">{{ userEmail }}</span>
+                  </div>
+                  <UButton
+                    icon="i-lucide-log-out"
+                    color="gray"
+                    variant="ghost"
+                    size="sm"
+                    class="text-gray-400 hover:text-red-400"
+                    @click="handleSignOut"
+                    aria-label="Sign out of your account"
+                  >
+                    Sign Out
+                  </UButton>
+                </div>
+                <UButton
+                  v-else
+                  icon="i-lucide-sparkles"
+                  color="pink"
+                  size="sm"
+                  @click="showAuthModal = true"
+                  aria-label="Sign up or log in to save your progress"
+                >
+                  Sign Up
+                </UButton>
+              </div>
+              
               <!-- XP, Level, Streak Display -->
-              <div v-if="gameState.xp > 0" class="flex items-center gap-3 text-sm">
+              <div v-if="gameState.xp > 0" class="flex items-center gap-3 text-sm flex-wrap justify-center">
                 <div class="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500/20 text-pink-400 font-medium rounded-full border border-pink-500/30">
                   <UIcon name="i-lucide-trophy" class="size-3.5" />
                   <span class="whitespace-nowrap">{{ gameState.xp }} XP</span>
@@ -49,73 +100,64 @@
                   <UIcon name="i-lucide-flame" class="size-3.5" />
                   <span class="whitespace-nowrap">{{ gameState.streak }} Day</span>
                 </div>
-              </div>
-              
-              <!-- Action Buttons -->
-              <div class="flex items-center gap-2">
-                <UButton
-                  icon="i-lucide-brain"
-                  color="primary"
-                  variant="ghost"
-                  size="sm"
-                  class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
-                  @click="handleOpenKGSidebar"
-                  @mouseenter="handleKGButtonHover"
+                <!-- Review Count Badge -->
+                <button
+                  v-if="dueReviewCount > 0"
+                  @click="showReviewSession = true"
+                  @keydown.enter="showReviewSession = true"
+                  @keydown.space.prevent="showReviewSession = true"
+                  class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 text-blue-400 font-medium rounded-full border border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-500/50 focus:bg-blue-500/30 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 cursor-pointer animate-pulse-slow"
+                  :aria-label="`${dueReviewCount} topics ready for review - press Enter or Space to start review session`"
+                  role="button"
+                  tabindex="0"
                 >
-                  <span class="hidden sm:inline">Knowledge Graph</span>
-                </UButton>
-
-                <!-- Auth UI -->
-                <div v-if="isAuthenticated" class="flex items-center gap-2">
-                  <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
-                    <UIcon name="i-lucide-user-check" class="size-3.5" />
-                    <span class="whitespace-nowrap">{{ userEmail }}</span>
-                  </div>
-                  <UButton
-                    icon="i-lucide-log-out"
-                    color="gray"
-                    variant="ghost"
-                    size="sm"
-                    class="text-gray-400 hover:text-red-400"
-                    @click="handleSignOut"
-                  >
-                    <span class="hidden sm:inline">Sign Out</span>
-                  </UButton>
-                </div>
-                <UButton
-                  v-else
-                  icon="i-lucide-sparkles"
-                  color="pink"
-                  size="sm"
-                  @click="showAuthModal = true"
-                >
-                  <span class="hidden sm:inline">Sign Up</span>
-                </UButton>
+                  <UIcon name="i-lucide-refresh-cw" class="size-3.5" />
+                  <span class="whitespace-nowrap">{{ dueReviewCount }} Review{{ dueReviewCount !== 1 ? 's' : '' }}</span>
+                </button>
               </div>
             </div>
           </div>
         </template>
 
         <!-- Contextual Banners -->
-        <div v-if="showHintBanner || showRemediationBanner || (dueReviewCount > 0 && messages.length > 0)" class="mb-4 space-y-3">
+        <div v-if="showHintBanner || showRemediationBanner || (dueReviewCount > 0 && messages.length > 0 && !isReviewBannerDismissed)" class="mb-4 space-y-3">
           <!-- Review Due Banner (contextual when chatting) -->
-          <div v-if="dueReviewCount > 0 && messages.length > 0" class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-            <div class="flex items-start gap-3">
+          <div v-if="dueReviewCount > 0 && messages.length > 0 && !isReviewBannerDismissed" class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 relative">
+            <UButton
+              icon="i-lucide-x"
+              color="gray"
+              variant="ghost"
+              size="xs"
+              class="absolute top-2 right-2 text-gray-400 hover:text-white"
+              :aria-label="'Dismiss review reminder'"
+              @click="dismissReviewBanner"
+            />
+            <div class="flex items-start gap-3 pr-6">
               <UIcon name="i-lucide-refresh-cw" class="size-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div class="flex-1">
                 <h4 class="text-sm font-semibold text-blue-300 mb-1">📚 {{ dueReviewCount }} Topics Ready for Review</h4>
                 <p class="text-xs text-blue-200/80 mb-2">
                   Your memory is getting fuzzy on some topics - quick reviews now will help you retain them!
                 </p>
-                <UButton 
-                  size="xs" 
-                  color="blue"
-                  icon="i-lucide-arrow-right"
-                  trailing
-                  @click="showReviewSession = true"
-                >
-                  Start Review Session
-                </UButton>
+                <div class="flex items-center gap-2">
+                  <UButton 
+                    size="xs" 
+                    color="blue"
+                    icon="i-lucide-arrow-right"
+                    trailing
+                    @click="showReviewSession = true"
+                  >
+                    Start Review Session
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    color="gray"
+                    variant="ghost"
+                    @click="dismissReviewBanner"
+                  >
+                    Remind me later
+                  </UButton>
+                </div>
               </div>
             </div>
           </div>
@@ -149,7 +191,7 @@
           </div>
         </div>
 
-        <!-- Save Progress Prompt (XP milestone or chat session threshold) -->
+        <!-- Save Progress Prompt (Modal) -->
         <SaveProgressPrompt
           v-if="!isAuthenticated && (gameState.xp >= 50 || messages.length >= 3)"
           :message="gameState.xp >= 50 ? `You've earned ${gameState.xp} XP! Sign up to save your progress.` : 'Keep your chat history! Sign up to save your learning progress.'"
@@ -509,20 +551,101 @@
     </ClientOnly>
 
     <!-- Review Session Modal -->
-    <UModal v-model="showReviewSession" :ui="{ width: 'max-w-5xl' }">
-      <ReviewSession @close="showReviewSession = false" />
+    <UModal v-model:open="showReviewSession" :ui="{ width: 'max-w-5xl' }">
+      <template v-if="showReviewSession">
+        <ReviewSession @close="showReviewSession = false" />
+      </template>
     </UModal>
 
-    <!-- Quiz Modal -->
-    <UModal v-model="showQuizInterface" :ui="{ width: 'max-w-5xl' }">
-      <QuizInterface @close="showQuizInterface = false" />
+    <!-- Quiz Modal - Positioned on the left -->
+    <UModal 
+      v-model:open="showQuizInterface" 
+      :ui="{
+        wrapper: 'justify-start items-center !p-4',
+        content: 'bg-black border border-pink-500/20 shadow-xl shadow-pink-500/20 max-w-5xl !my-0 overflow-y-auto max-h-[90vh]',
+        overlay: 'bg-black/80'
+      }"
+    >
+      <QuizInterface v-if="showQuizInterface" @close="showQuizInterface = false" />
     </UModal>
 
     <!-- Auth Modal -->
     <AuthModal
+      v-if="showAuthModal"
       v-model="showAuthModal"
       :has-anonymous-data="hasAnonymousData"
     />
+
+    <!-- Floating Action Buttons (FABs) - Always visible, no scrolling needed -->
+    <div 
+      class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 items-end"
+      :class="{
+        'sm:bottom-20 md:bottom-6': messages.length > 0, // Move up on mobile when chat input is visible
+      }"
+    >
+      <!-- Review FAB (shown when reviews are due) -->
+      <div
+        v-if="dueReviewCount > 0"
+        class="relative"
+      >
+        <UButton
+          icon="i-lucide-refresh-cw"
+          color="primary"
+          size="xl"
+          :ui="{ rounded: 'rounded-full', padding: { xl: 'p-4' } }"
+          class="!w-14 !h-14 md:!w-14 md:!h-14 sm:!w-12 sm:!h-12 !bg-gradient-to-br !from-blue-500 !to-cyan-600 hover:!from-blue-600 hover:!to-cyan-700 !shadow-lg !shadow-blue-500/50 hover:!shadow-blue-500/70 !transition-all !duration-300 hover:!scale-110 !animate-pulse-slow focus:!ring-2 focus:!ring-blue-400 focus:!ring-offset-2 focus:!ring-offset-black"
+          :aria-label="`${dueReviewCount} topics ready for review`"
+          @click.stop="showReviewSession = true"
+          @keydown.enter.stop="showReviewSession = true"
+          @keydown.space.prevent.stop="showReviewSession = true"
+        >
+        </UButton>
+        <!-- Badge with count -->
+        <div class="absolute -top-1 -right-1 w-6 h-6 md:w-6 md:h-6 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-black shadow-lg">
+          <span class="text-xs md:text-xs sm:text-[10px] font-bold text-white">{{ dueReviewCount > 99 ? '99+' : dueReviewCount }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quiz FAB (always visible, draggable) - Positioned independently -->
+    <div
+      ref="quizFabRef"
+      class="fixed group cursor-move select-none"
+      :style="{ bottom: `${quizFabPosition.y}px`, right: `${quizFabPosition.x}px`, zIndex: 100 }"
+      @mousedown.prevent="startDrag($event, 'quiz')"
+      @touchstart.prevent="startDrag($event, 'quiz')"
+    >
+      <div class="flex items-center gap-3 flex-row-reverse">
+        <!-- Label (shown on hover) -->
+        <div class="hidden group-hover:block bg-gradient-to-r from-black/95 to-black/90 backdrop-blur-sm border border-pink-500/40 rounded-lg px-4 py-2.5 shadow-xl shadow-pink-500/30 pointer-events-none transition-all duration-300">
+          <span class="text-sm font-semibold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">Practice Quiz</span>
+        </div>
+        
+        <!-- FAB Button -->
+        <button
+          type="button"
+          class="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-black via-black to-gray-900 border-2 border-pink-500/60 hover:border-pink-500 shadow-2xl shadow-pink-500/40 hover:shadow-pink-500/60 transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 focus:ring-offset-black flex items-center justify-center group/button"
+          :class="{ 'cursor-grabbing': isDraggingFab, 'cursor-grab': !isDraggingFab }"
+          aria-label="Start practice quiz"
+          @click.stop.prevent="handleQuizFabClick"
+          @keydown.enter.stop.prevent="showQuizInterface = true"
+          @keydown.space.prevent.stop="showQuizInterface = true"
+        >
+          <!-- Glow effect -->
+          <div class="absolute inset-0 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 blur-md opacity-50 group-hover/button:opacity-75 transition-opacity duration-300"></div>
+          
+          <!-- Icon -->
+          <UIcon 
+            name="i-lucide-clipboard-check" 
+            class="relative z-10 size-6 md:size-7 text-pink-400 group-hover/button:text-pink-300 transition-colors duration-300"
+          />
+          
+          <!-- Shine effect on hover -->
+          <div class="absolute inset-0 rounded-full bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover/button:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -574,10 +697,107 @@ const hasAnonymousData = computed(() => {
 const dueReviewCount = ref(0)
 const hasPracticedTopics = ref(false)
 
+// Draggable FAB state
+const quizFabRef = ref<HTMLElement | null>(null)
+const quizFabPosition = ref({ x: 24, y: 24 })
+const isDraggingFab = ref(false)
+const dragStartPos = ref({ x: 0, y: 0 })
+const fabStartPos = ref({ x: 0, y: 0 })
+const hasDragged = ref(false)
+
+// Load saved FAB position from localStorage
+onMounted(() => {
+  const saved = localStorage.getItem('quizFabPosition')
+  if (saved) {
+    try {
+      quizFabPosition.value = JSON.parse(saved)
+    } catch (e) {
+      console.error('Failed to load FAB position:', e)
+    }
+  }
+})
+
+// Save FAB position to localStorage
+const saveFabPosition = () => {
+  localStorage.setItem('quizFabPosition', JSON.stringify(quizFabPosition.value))
+}
+
+// Handle Quiz FAB click (prevent if dragged)
+const handleQuizFabClick = () => {
+  if (!hasDragged.value) {
+    showQuizInterface.value = true
+  }
+  hasDragged.value = false
+}
+
+// Drag handlers
+const startDrag = (e: MouseEvent | TouchEvent, type: 'quiz') => {
+  if (type === 'quiz') {
+    isDraggingFab.value = true
+    hasDragged.value = false
+    const clientX = 'touches' in e && e.touches[0] ? e.touches[0].clientX : (e as MouseEvent).clientX
+    const clientY = 'touches' in e && e.touches[0] ? e.touches[0].clientY : (e as MouseEvent).clientY
+    
+    dragStartPos.value = { x: clientX, y: clientY }
+    fabStartPos.value = { ...quizFabPosition.value }
+    
+    document.addEventListener('mousemove', handleDrag)
+    document.addEventListener('touchmove', handleDrag)
+    document.addEventListener('mouseup', stopDrag)
+    document.addEventListener('touchend', stopDrag)
+  }
+}
+
+const handleDrag = (e: MouseEvent | TouchEvent) => {
+  if (!isDraggingFab.value) return
+  
+  e.preventDefault()
+  
+  const clientX = 'touches' in e && e.touches[0] ? e.touches[0].clientX : (e as MouseEvent).clientX
+  const clientY = 'touches' in e && e.touches[0] ? e.touches[0].clientY : (e as MouseEvent).clientY
+  
+  // Calculate delta from drag start
+  const deltaX = dragStartPos.value.x - clientX
+  const deltaY = dragStartPos.value.y - clientY // Invert because bottom positioning
+  
+  // Mark as dragged if moved more than 10px (to avoid accidental drags on clicks)
+  if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+    hasDragged.value = true
+  }
+  
+  // Only update position if actually dragging
+  if (hasDragged.value) {
+    // Calculate new position (constrained to viewport)
+    const fabSize = 56 // 14 * 4 (w-14 = 3.5rem = 56px)
+    const newX = Math.max(0, Math.min(window.innerWidth - fabSize, fabStartPos.value.x + deltaX))
+    const newY = Math.max(0, Math.min(window.innerHeight - fabSize, fabStartPos.value.y - deltaY))
+    
+    quizFabPosition.value = { x: newX, y: newY }
+  }
+}
+
+const stopDrag = () => {
+  if (isDraggingFab.value) {
+    isDraggingFab.value = false
+    saveFabPosition()
+    
+    document.removeEventListener('mousemove', handleDrag)
+    document.removeEventListener('touchmove', handleDrag)
+    document.removeEventListener('mouseup', stopDrag)
+    document.removeEventListener('touchend', stopDrag)
+  }
+}
+
+// Cleanup on unmount
+onUnmounted(() => {
+  stopDrag()
+})
+
 // Hint and remediation tracking
 const stuckTurnCount = ref(0)
 const showHintBanner = ref(false)
 const showRemediationBanner = ref(false)
+const isReviewBannerDismissed = ref(false)
 
 // Computed to check if file exists
 const hasFile = computed(() => {
@@ -1156,6 +1376,11 @@ const updateBanners = () => {
   showRemediationBanner.value = stuckTurnCount.value >= 5 || hasRemediationMessage
 }
 
+// Dismiss review banner for this session
+const dismissReviewBanner = () => {
+  isReviewBannerDismissed.value = true
+}
+
 // Reset conversation
 const resetConversation = async () => {
   if (isProcessing.value) return
@@ -1168,6 +1393,7 @@ const resetConversation = async () => {
   stuckTurnCount.value = 0
   showHintBanner.value = false
   showRemediationBanner.value = false
+  isReviewBannerDismissed.value = false
   
   // Unsubscribe from old session if exists
   if (unsubscribeChat) {
@@ -1278,8 +1504,8 @@ const handleSignOut = async () => {
   }
 }
 
-// Handle topic selection from KG sidebar
-const handleTopicSelect = async (topicId: string) => {
+// Handle topic selection from KG sidebar or diagnostic
+const handleTopicSelect = async (topicId: string, autoStart: boolean = true) => {
   // Close the sidebar
   showKGSidebar.value = false
   
@@ -1297,8 +1523,8 @@ const handleTopicSelect = async (topicId: string) => {
     return
   }
   
-  // Generate learning prompt
-  const prompt = `I want to learn about ${topic.name}. Can you give me a problem to practice?`
+  // Generate learning prompt that explicitly asks for a practice problem in equation format
+  const prompt = `I want to learn about ${topic.name}. Can you give me a practice problem? Please present it as an equation that I can solve.`
   
   // Toast notification
   toast.add({
@@ -1308,20 +1534,54 @@ const handleTopicSelect = async (topicId: string) => {
     icon: 'i-lucide-book-open'
   })
   
-  // Programmatically trigger chat
-  textProblem.value = prompt
-  await processText()
+  // Programmatically trigger chat if autoStart is true
+  if (autoStart) {
+    textProblem.value = prompt
+    await processText()
+  }
 }
 
 // Fetch due review count
 const fetchDueReviews = async () => {
   try {
+    // Get userId and sessionId
+    const { user } = useAuth()
+    const userId = user.value?.id
+    const sessionIdVal = sessionId.value
+    
+    if (!userId && !sessionIdVal) {
+      console.warn('No userId or sessionId available for fetchDueReviews')
+      return
+    }
+    
+    const previousCount = dueReviewCount.value
     const response = await $fetch<any>('/api/quiz/due-reviews', {
-      method: 'GET'
+      method: 'GET',
+      query: { userId, sessionId: sessionIdVal }
     })
     
     if (response?.success && response?.topics?.length) {
       dueReviewCount.value = response.topics.length
+      // Reset banner dismissal when new reviews come in
+      if (dueReviewCount.value > 0) {
+        isReviewBannerDismissed.value = false
+      }
+      
+      // Screen reader announcement for new reviews
+      if (process.client && previousCount === 0 && dueReviewCount.value > 0) {
+        const announcement = document.createElement('div')
+        announcement.setAttribute('role', 'status')
+        announcement.setAttribute('aria-live', 'polite')
+        announcement.setAttribute('aria-atomic', 'true')
+        announcement.className = 'sr-only'
+        announcement.textContent = `${dueReviewCount.value} topic${dueReviewCount.value !== 1 ? 's' : ''} ready for review. Use the floating action button or header badge to start your review session.`
+        document.body.appendChild(announcement)
+        setTimeout(() => {
+          document.body.removeChild(announcement)
+        }, 1000)
+      }
+    } else {
+      dueReviewCount.value = 0
     }
   } catch (error) {
     console.warn('Failed to fetch due reviews:', error)
@@ -1331,14 +1591,27 @@ const fetchDueReviews = async () => {
 // Check if student has practiced any topics
 const checkPracticedTopics = async () => {
   try {
-    const response = await $fetch<any>('/api/mastery/domain', {
-      method: 'GET'
+    // Get userId and sessionId
+    const { user } = useAuth()
+    const userId = user.value?.id
+    const sessionIdVal = sessionId.value
+    
+    if (!userId && !sessionIdVal) {
+      console.warn('No userId or sessionId available for checkPracticedTopics')
+      return
+    }
+    
+    // Since the API requires a domain parameter, we'll check frontier topics instead
+    // to determine if the user has any progress
+    const frontierResponse = await $fetch<any>('/api/knowledge-graph/frontier', {
+      method: 'GET',
+      query: { userId, sessionId: sessionIdVal }
     })
     
-    if (response?.success && response?.domainProgress) {
-      // Check if any domain has been practiced
-      const practiced = Object.values(response.domainProgress).some((domain: any) => 
-        domain.totalMastered > 0 || domain.inProgress > 0
+    if (frontierResponse?.success && frontierResponse?.frontierTopics) {
+      // Check if any frontier topic has been practiced (mastery > 0)
+      const practiced = frontierResponse.frontierTopics.some((topic: any) => 
+        topic.mastery_level > 0
       )
       hasPracticedTopics.value = practiced
     }
@@ -1386,6 +1659,25 @@ onMounted(async () => {
       fetchDueReviews(),
       checkPracticedTopics()
     ])
+    
+    // Handle query parameters (e.g., from diagnostic)
+    const route = useRoute()
+    
+    // Handle opening knowledge graph from query param
+    if (route.query.openKG === 'true') {
+      showKGSidebar.value = true
+    }
+    
+    // Handle starting a topic from query param (e.g., from diagnostic)
+    if (route.query.startTopic && route.query.fromDiagnostic === 'true') {
+      const topicId = route.query.startTopic as string
+      
+      // Wait a brief moment for the UI to settle
+      await nextTick()
+      setTimeout(() => {
+        handleTopicSelect(topicId, true)
+      }, 500)
+    }
   }
 })
 
@@ -1455,5 +1747,39 @@ onUnmounted(() => {
 
 .animate-fade-in {
   animation: fade-in 1s ease-out;
+}
+
+/* Slow pulse animation for review indicators */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Mobile adjustments for FABs */
+@media (max-width: 640px) {
+  .fixed.bottom-6 {
+    bottom: 5rem; /* Adjust for mobile chat input */
+  }
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 </style>

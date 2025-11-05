@@ -66,13 +66,22 @@ export const useKaTeX = () => {
   const findCurrentProblemStart = (messages: Array<{role: string, content: string} | any>): number => {
     if (messages.length === 0) return 0
     
-    // Look backwards through messages to find the most recent user message with an equation
-    // This represents where the current problem conversation begins
+    // Look backwards through messages to find the most recent problem start
+    // This could be a user message with an equation OR an AI message presenting a practice problem
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]
+      const content = msg.content || ''
       
       if (msg.role === 'user') {
-        const content = msg.content || ''
+        // Check for learning requests that might precede an AI-generated problem
+        const learningRequest = content.match(/(?:i want to learn|practice|give me a problem|can you give me)/i)
+        if (learningRequest && i + 1 < messages.length && messages[i + 1].role === 'assistant') {
+          // Check if the next message (AI response) contains a problem
+          const nextContent = messages[i + 1].content || ''
+          if (nextContent.match(/(?:problem|equation|solve|calculate|what is)/i)) {
+            return i + 1 // Start from the AI's problem presentation
+          }
+        }
         
         // Check for equation patterns: "4x-2 = 10", "4x+2 = 12", "2x+7=3", etc.
         // Pattern matches: coefficient*x +/- constant = number
@@ -90,6 +99,13 @@ export const useKaTeX = () => {
         // Look for LaTeX equations in user messages
         const latexMatch = content.match(/\\[\(\[]([^\)\]]*?[+\-].*?=.*?)\\?[\)\]]/)
         if (latexMatch) {
+          return i
+        }
+        
+        // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", etc.
+        // This should be a short expression (to avoid matching random numbers in text)
+        const arithmeticMatch = content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*$/)
+        if (arithmeticMatch) {
           return i
         }
       }
@@ -127,6 +143,12 @@ export const useKaTeX = () => {
         const latexMatch = msg.content.match(/\\[\(\[]([^\)\]]*?[+\-].*?=.*?)\\?[\)\]]/)
         if (latexMatch) {
           return `\\( ${latexMatch[1]} \\)`
+        }
+        
+        // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", etc.
+        const arithmeticMatch = msg.content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*$/)
+        if (arithmeticMatch) {
+          return arithmeticMatch[1]
         }
       }
     }

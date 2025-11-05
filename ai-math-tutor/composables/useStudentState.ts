@@ -39,9 +39,22 @@ export const useStudentState = () => {
   const error = ref<string | null>(null)
 
   // Fetch student context
-  const fetchStudentContext = async (): Promise<void> => {
+  const fetchStudentContext = async (userId?: string, sessionId?: string): Promise<void> => {
     loading.value = true
     error.value = null
+
+    // Skip if no userId or sessionId provided
+    if (!userId && !sessionId) {
+      console.warn('No userId or sessionId provided to fetchStudentContext')
+      context.value = {
+        state: 'new',
+        dueReviews: 0,
+        domainProgress: {},
+        hasCompletedDiagnostic: false
+      }
+      loading.value = false
+      return
+    }
 
     try {
       // Fetch diagnostic status (handle errors gracefully)
@@ -49,7 +62,7 @@ export const useStudentState = () => {
       try {
         const diagnosticResponse = await $fetch<any>('/api/diagnostic/start', {
           method: 'POST',
-          body: {}
+          body: { userId, sessionId }
         })
         hasCompletedDiagnostic = diagnosticResponse?.sessionId ? true : false
       } catch (diagErr) {
@@ -59,21 +72,16 @@ export const useStudentState = () => {
       }
 
       // Fetch mastery domain data (handle errors gracefully)
+      // Note: This endpoint needs a specific domain, so we'll skip it for now
+      // and rely on the frontier topics to determine progress
       let domainProgress = {}
-      try {
-        const masteryResponse = await $fetch<any>('/api/mastery/domain', {
-          method: 'GET'
-        })
-        domainProgress = masteryResponse?.domainProgress || {}
-      } catch (masteryErr) {
-        console.warn('Failed to fetch mastery data:', masteryErr)
-      }
 
       // Fetch due reviews (handle errors gracefully)
       let dueReviews = 0
       try {
         const reviewsResponse = await $fetch<any>('/api/quiz/due-reviews', {
-          method: 'GET'
+          method: 'GET',
+          query: { userId, sessionId }
         })
         dueReviews = reviewsResponse?.topics?.length || 0
       } catch (reviewErr) {
@@ -84,9 +92,10 @@ export const useStudentState = () => {
       let frontierTopics: any[] = []
       try {
         const frontierResponse = await $fetch<any>('/api/knowledge-graph/frontier', {
-          method: 'GET'
+          method: 'GET',
+          query: { userId, sessionId }
         })
-        frontierTopics = frontierResponse?.topics || []
+        frontierTopics = frontierResponse?.frontierTopics || []
       } catch (frontierErr) {
         console.warn('Failed to fetch frontier topics:', frontierErr)
       }

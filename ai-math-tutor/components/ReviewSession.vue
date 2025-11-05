@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-black py-8">
-    <UContainer class="py-8 max-w-4xl relative z-10">
+  <div class="bg-black py-6">
+    <div class="max-w-4xl mx-auto px-4">
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-600 bg-clip-text text-transparent mb-4">
@@ -152,7 +152,7 @@
           @close="finishReview"
         />
       </div>
-    </UContainer>
+    </div>
   </div>
 </template>
 

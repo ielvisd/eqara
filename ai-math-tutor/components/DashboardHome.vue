@@ -9,7 +9,7 @@
     <div v-else-if="error" class="bg-red-500/10 border border-red-500/30 rounded-lg p-6 text-center">
       <UIcon name="i-lucide-alert-circle" class="size-8 text-red-400 mx-auto mb-3" />
       <p class="text-red-300">{{ error }}</p>
-      <UButton class="mt-4" @click="fetchStudentContext">Try Again</UButton>
+      <UButton class="mt-4" @click="() => fetchStudentContext(user?.id, getSessionId() || undefined)">Try Again</UButton>
     </div>
 
     <!-- State 1: New Student (No Diagnostic) -->
@@ -89,32 +89,7 @@
         </div>
       </div>
 
-      <!-- Reviews Card (only when reviews due) -->
-      <div 
-        v-if="context.dueReviews > 0" 
-        class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6"
-      >
-        <div class="flex items-start gap-4">
-          <div class="bg-blue-500/20 p-3 rounded-lg">
-            <UIcon name="i-lucide-refresh-cw" class="size-6 text-blue-400" />
-          </div>
-          <div class="flex-1">
-            <h3 class="text-xl font-bold text-white mb-1">{{ context.dueReviews }} Topics Ready for Review</h3>
-            <p class="text-gray-300 text-sm mb-4">
-              Your memory is getting fuzzy - time to review!
-            </p>
-            <UButton 
-              color="blue" 
-              size="lg"
-              icon="i-lucide-arrow-right"
-              trailing
-              @click="emit('start-review')"
-            >
-              Start Review Session
-            </UButton>
-          </div>
-        </div>
-      </div>
+      <!-- Reviews Card removed - use FAB button instead -->
 
       <!-- Progress Overview -->
       <div class="bg-black/40 border border-gray-700 rounded-xl p-6">
@@ -170,14 +145,7 @@
         >
           Explore Knowledge Graph
         </UButton>
-        <UButton 
-          size="lg" 
-          variant="outline"
-          icon="i-lucide-clipboard-check"
-          @click="emit('practice-quiz')"
-        >
-          Practice Quiz
-        </UButton>
+        <!-- Practice Quiz button removed - use FAB button instead -->
       </div>
     </div>
   </div>
@@ -195,6 +163,8 @@ const {
   isCompleted
 } = useStudentState()
 
+const { user } = useAuth()
+
 const emit = defineEmits<{
   'continue-learning': []
   'start-review': []
@@ -202,9 +172,24 @@ const emit = defineEmits<{
   'practice-quiz': []
 }>()
 
+// Helper to get or create session ID
+const getSessionId = () => {
+  if (process.client) {
+    let sessionId = localStorage.getItem('chat_session_id')
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('chat_session_id', sessionId)
+    }
+    return sessionId
+  }
+  return null
+}
+
 // Fetch context on mount
 onMounted(() => {
-  fetchStudentContext()
+  const sessionId = getSessionId()
+  const userId = user.value?.id
+  fetchStudentContext(userId, sessionId || undefined)
 })
 </script>
 

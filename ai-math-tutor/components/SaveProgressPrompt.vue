@@ -1,46 +1,59 @@
 <template>
-  <div
-    v-if="shouldShow"
-    class="bg-gradient-to-r from-pink-500/20 to-purple-500/20 border border-pink-500/30 rounded-lg p-4 mb-4"
-  >
-    <div class="flex items-start gap-3">
-      <div class="bg-pink-500/20 p-2 rounded-lg flex-shrink-0">
-        <UIcon name="i-lucide-save" class="size-5 text-pink-400" />
-      </div>
-      <div class="flex-1 min-w-0">
-        <h4 class="text-sm font-semibold text-pink-300 mb-1">
-          💾 Save Your Progress!
-        </h4>
-        <p class="text-xs text-pink-200/80 mb-3">
-          {{ message || 'Sign up to keep your XP, mastery, and chat history permanently' }}
+  <UModal v-if="shouldShow" v-model="shouldShow" :ui="{ width: 'max-w-md' }">
+    <UCard class="bg-black/90 border border-pink-500/20">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg shadow-pink-500/50">
+            <UIcon name="i-lucide-save" class="size-5 text-white" />
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-white">💾 Save Your Progress!</h3>
+            <p class="text-xs text-gray-400">Don't lose your learning journey</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <p class="text-gray-300 leading-relaxed">
+          {{ message || 'Sign up to keep your XP, mastery, and chat history permanently. Your progress is saved across all devices!' }}
         </p>
-        <div class="flex items-center gap-2">
+
+        <div class="bg-pink-500/10 border border-pink-500/20 rounded-lg p-4 space-y-2">
+          <div class="flex items-center gap-2 text-sm text-pink-300">
+            <UIcon name="i-lucide-check-circle" class="size-4" />
+            <span>Keep your XP and level progress</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-pink-300">
+            <UIcon name="i-lucide-check-circle" class="size-4" />
+            <span>Save your chat history</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm text-pink-300">
+            <UIcon name="i-lucide-check-circle" class="size-4" />
+            <span>Track your mastery across topics</span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-end gap-3">
           <UButton
-            size="sm"
-            color="pink"
-            @click="handleSignUp"
-          >
-            Sign Up Now
-          </UButton>
-          <UButton
-            size="sm"
             color="gray"
             variant="ghost"
             @click="handleMaybeLater"
           >
             Maybe Later
           </UButton>
+          <UButton
+            color="pink"
+            class="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
+            @click="handleSignUp"
+          >
+            Sign Up Now
+          </UButton>
         </div>
-      </div>
-      <UButton
-        icon="i-lucide-x"
-        color="gray"
-        variant="ghost"
-        size="xs"
-        @click="handleDismiss"
-      />
-    </div>
-  </div>
+      </template>
+    </UCard>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -79,7 +92,10 @@ onMounted(() => {
     }
   }
 
-  shouldShow.value = true
+  // Small delay to let page load smoothly
+  setTimeout(() => {
+    shouldShow.value = true
+  }, 1000)
 })
 
 const handleSignUp = () => {
@@ -90,13 +106,6 @@ const handleSignUp = () => {
 const handleMaybeLater = () => {
   // Dismiss for 24 hours
   const dismissUntil = Date.now() + (24 * 60 * 60 * 1000)
-  localStorage.setItem(`save-progress-prompt-${promptKey.value}`, dismissUntil.toString())
-  shouldShow.value = false
-}
-
-const handleDismiss = () => {
-  // Dismiss for 7 days (less aggressive)
-  const dismissUntil = Date.now() + (7 * 24 * 60 * 60 * 1000)
   localStorage.setItem(`save-progress-prompt-${promptKey.value}`, dismissUntil.toString())
   shouldShow.value = false
 }
