@@ -120,11 +120,11 @@
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+          <div class="flex flex-col sm:flex-row gap-3 pt-2 justify-center">
             <UButton
               color="primary"
               size="xl"
-              class="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transition-all duration-200"
+              class="w-full sm:w-48 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transition-all duration-200"
               :disabled="!selectedAnswer || processing"
               :loading="processing"
               @click="submitSelectedAnswer"
@@ -135,10 +135,8 @@
               </template>
             </UButton>
             <UButton
-              color="gray"
-              variant="outline"
               size="xl"
-              class="sm:flex-shrink-0 font-semibold border-gray-700 hover:border-gray-600 hover:bg-gray-900/50 transition-all duration-200"
+              class="w-full sm:w-48 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/40 transition-all duration-200 border-0"
               :disabled="processing"
               @click="submitIdontKnow"
             >

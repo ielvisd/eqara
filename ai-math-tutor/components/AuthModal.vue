@@ -1,7 +1,7 @@
 <template>
   <UModal 
     v-model:open="isOpen" 
-    :title="emailSent ? '📧 Check Your Email' : '💾 Save Your Progress'"
+    :title="emailSent ? '📧 Check Your Email' : 'Sign In / Sign Up'"
     :ui="{
       content: 'bg-black border border-pink-500/20 shadow-lg shadow-pink-500/20',
       header: 'bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-b border-pink-500/20',
@@ -44,7 +44,10 @@
       <div class="space-y-4 py-4">
         <div class="text-center mb-4">
           <p class="text-sm text-gray-300">
-            {{ hasAnonymousData ? 'Your current progress will be saved to your account' : 'Sign in or create an account with just your email' }}
+            {{ hasAnonymousData ? 'Your current progress will be saved to your account' : 'Sign in to your account or create a new one with just your email' }}
+          </p>
+          <p class="text-xs text-gray-400 mt-2">
+            New to Eqara? No problem - same process! We'll create your account automatically.
           </p>
         </div>
 
@@ -88,7 +91,7 @@
 
         <div class="text-center">
           <p class="text-xs text-gray-400">
-            No password required • We'll send you a secure link to sign in
+            No password required • We'll send you a secure magic link to access your account
           </p>
         </div>
 

@@ -48,7 +48,7 @@
             class="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
             @click="handleSignUp"
           >
-            Sign Up Now
+            Sign In / Sign Up
           </UButton>
         </div>
       </template>

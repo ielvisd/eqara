@@ -80,9 +80,9 @@
                   color="pink"
                   size="sm"
                   @click="showAuthModal = true"
-                  aria-label="Sign up or log in to save your progress"
+                  aria-label="Sign in or sign up to save your progress"
                 >
-                  Sign Up
+                  Sign In
                 </UButton>
               </div>
               
@@ -557,17 +557,24 @@
       </template>
     </UModal>
 
-    <!-- Quiz Modal - Positioned on the left -->
-    <UModal 
+    <!-- Quiz Slideover - Opens from the left -->
+    <USlideover 
       v-model:open="showQuizInterface" 
+      side="left"
+      title="Practice Quiz"
+      description="Test your knowledge and strengthen your mastery!"
       :ui="{
-        wrapper: 'justify-start items-center !p-4',
-        content: 'bg-black border border-pink-500/20 shadow-xl shadow-pink-500/20 max-w-5xl !my-0 overflow-y-auto max-h-[90vh]',
-        overlay: 'bg-black/80'
+        header: 'bg-black border-b border-pink-500/20',
+        title: 'text-white font-bold',
+        description: 'text-pink-400',
+        content: 'bg-black',
+        body: 'bg-black'
       }"
     >
-      <QuizInterface v-if="showQuizInterface" @close="showQuizInterface = false" />
-    </UModal>
+      <template #body>
+        <QuizInterface v-if="showQuizInterface" @close="showQuizInterface = false" />
+      </template>
+    </USlideover>
 
     <!-- Auth Modal -->
     <AuthModal
@@ -758,7 +765,7 @@ const handleDrag = (e: MouseEvent | TouchEvent) => {
   
   // Calculate delta from drag start
   const deltaX = dragStartPos.value.x - clientX
-  const deltaY = dragStartPos.value.y - clientY // Invert because bottom positioning
+  const deltaY = clientY - dragStartPos.value.y // Positive when dragging down, negative when dragging up
   
   // Mark as dragged if moved more than 10px (to avoid accidental drags on clicks)
   if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
@@ -769,8 +776,15 @@ const handleDrag = (e: MouseEvent | TouchEvent) => {
   if (hasDragged.value) {
     // Calculate new position (constrained to viewport)
     const fabSize = 56 // 14 * 4 (w-14 = 3.5rem = 56px)
-    const newX = Math.max(0, Math.min(window.innerWidth - fabSize, fabStartPos.value.x + deltaX))
-    const newY = Math.max(0, Math.min(window.innerHeight - fabSize, fabStartPos.value.y - deltaY))
+    const maxX = window.innerWidth - fabSize
+    const maxY = window.innerHeight - fabSize
+    
+    // For X: right positioning, so dragging right decreases x
+    const newX = Math.max(0, Math.min(maxX, fabStartPos.value.x + deltaX))
+    
+    // For Y: bottom positioning, so dragging down decreases y (moves up from bottom)
+    // dragging up increases y (moves down from top, closer to bottom)
+    const newY = Math.max(0, Math.min(maxY, fabStartPos.value.y - deltaY))
     
     quizFabPosition.value = { x: newX, y: newY }
   }

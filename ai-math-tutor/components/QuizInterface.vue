@@ -1,16 +1,6 @@
 <template>
   <div class="py-6">
     <div class="max-w-4xl mx-auto px-4">
-      <!-- Header -->
-      <div class="text-center mb-8">
-        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-400 via-pink-500 to-pink-600 bg-clip-text text-transparent mb-4">
-          🎯 Practice Quiz
-        </h1>
-        <p class="text-lg text-gray-300">
-          Test your knowledge and strengthen your mastery!
-        </p>
-      </div>
-
       <!-- Loading State -->
       <UCard v-if="loading" class="bg-black/90 border border-pink-500/20">
         <div class="text-center py-12">
