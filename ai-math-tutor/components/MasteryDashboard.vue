@@ -184,7 +184,7 @@ defineExpose({ refresh })
           <button
             v-for="topic in frontierTopics"
             :key="topic.id"
-            class="w-full p-3 rounded-lg bg-pink-500/10 border border-pink-500/30 hover:bg-pink-500/20 transition-all text-left group"
+            class="w-full p-3 rounded-lg bg-pink-500/10 border border-pink-500/30 hover:bg-pink-500/20 transition-all text-left group cursor-pointer"
             @click="emit('topicClick', topic.id)"
           >
             <div class="flex items-center justify-between">
@@ -229,7 +229,7 @@ defineExpose({ refresh })
           <button
             v-for="item in recentTopics"
             :key="item.id"
-            class="w-full p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-all text-left group"
+            class="w-full p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-all text-left group cursor-pointer"
             @click="emit('topicClick', item.topic_id)"
           >
             <div class="flex items-center justify-between">

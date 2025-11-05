@@ -13,3 +13,17 @@
 body {
   font-family: var(--font-family-sans);
 }
+
+/* Cursor pointer for all interactive elements */
+button,
+[role="button"],
+a:not([aria-disabled="true"]),
+.cursor-pointer {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"],
+.cursor-not-allowed {
+  cursor: not-allowed;
+}

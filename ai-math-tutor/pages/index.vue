@@ -345,7 +345,7 @@
               @submit="processText"
             >
               <template #trailing>
-                <div class="flex items-center gap-2 px-3">
+                <div class="flex items-center justify-center gap-2 px-3">
                   <UChatPromptSubmit :status="chatStatus" @stop="stopProcessing" />
                 </div>
               </template>

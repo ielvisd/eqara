@@ -4,6 +4,339 @@
 // Track questions used per topic to avoid repeats
 const usedQuestions = new Map<string, Set<string>>()
 
+// Helper function to randomize array order (Fisher-Yates shuffle)
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+// Generate realistic distractors for addition problems
+function generateAdditionDistractors(a: number, b: number, correctAnswer: number): string[] {
+  const distractors: number[] = []
+  
+  // Common error: forget to carry the one (add ones digits incorrectly)
+  const onesA = a % 10
+  const onesB = b % 10
+  const tensA = Math.floor(a / 10)
+  const tensB = Math.floor(b / 10)
+  
+  // Error: forgot to carry - write ones digit without carrying, add tens without the carry
+  // Example: 56 + 29, ones: 6+9=15, write 5 (no carry), tens: 5+2=7, result: 75 (wrong, should be 85)
+  if (onesA + onesB >= 10) {
+    const forgotCarry = (onesA + onesB) % 10 + (tensA + tensB) * 10
+    if (forgotCarry !== correctAnswer && !distractors.includes(forgotCarry)) {
+      distractors.push(forgotCarry)
+    }
+  }
+  
+  // Error: added ones digits incorrectly (e.g., 5+9 = 14 but wrote 4)
+  const wrongOnes = (onesA + onesB - 10) + (tensA + tensB + 1) * 10
+  if (wrongOnes !== correctAnswer && wrongOnes > 0 && !distractors.includes(wrongOnes)) {
+    distractors.push(wrongOnes)
+  }
+  
+  // Error: miscounted by 1 in either direction
+  if (!distractors.includes(correctAnswer + 1)) distractors.push(correctAnswer + 1)
+  if (!distractors.includes(correctAnswer - 1)) distractors.push(correctAnswer - 1)
+  
+  // Error: added digits incorrectly (swapped places)
+  const swapped = parseInt(String(b) + String(a))
+  if (swapped !== correctAnswer && swapped > 0 && !distractors.includes(swapped)) {
+    distractors.push(swapped)
+  }
+  
+  // Error: double counted a digit
+  const doubleCounted = correctAnswer + (onesA + onesB)
+  if (doubleCounted !== correctAnswer && !distractors.includes(doubleCounted)) {
+    distractors.push(doubleCounted)
+  }
+  
+  // Add some near-miss values
+  const nearMisses = [correctAnswer + 5, correctAnswer - 5, correctAnswer + 10, correctAnswer - 10]
+  nearMisses.forEach(nm => {
+    if (nm > 0 && nm !== correctAnswer && !distractors.includes(nm)) {
+      distractors.push(nm)
+    }
+  })
+  
+  // Convert to strings and filter duplicates, ensure we have exactly 4 distractors
+  const distractorStrings = [...new Set(distractors.map(d => String(d)))]
+    .filter(d => d !== String(correctAnswer))
+    .slice(0, 4)
+  
+  // If we don't have enough, generate some more
+  while (distractorStrings.length < 4) {
+    const randomOffset = Math.floor(Math.random() * 20) - 10
+    const candidate = correctAnswer + randomOffset
+    if (candidate > 0 && candidate !== correctAnswer && !distractorStrings.includes(String(candidate))) {
+      distractorStrings.push(String(candidate))
+    }
+  }
+  
+  return distractorStrings.slice(0, 4)
+}
+
+// Generate realistic distractors for subtraction problems
+function generateSubtractionDistractors(a: number, b: number, correctAnswer: number): string[] {
+  const distractors: number[] = []
+  
+  // Common error: subtract smaller from larger in wrong order
+  const wrongOrder = b - a
+  if (wrongOrder !== correctAnswer && wrongOrder > 0 && !distractors.includes(wrongOrder)) {
+    distractors.push(wrongOrder)
+  }
+  
+  // Error: forgot to borrow/regroup
+  const onesA = a % 10
+  const onesB = b % 10
+  const tensA = Math.floor(a / 10)
+  const tensB = Math.floor(b / 10)
+  
+  if (onesA < onesB) {
+    // Common error: subtract ones without borrowing - try to do onesA - onesB directly
+    // This results in a negative number, so students might swap: onesB - onesA
+    const forgotBorrowSwap = (onesB - onesA) + (tensA - tensB) * 10
+    if (forgotBorrowSwap !== correctAnswer && forgotBorrowSwap > 0 && !distractors.includes(forgotBorrowSwap)) {
+      distractors.push(forgotBorrowSwap)
+    }
+    
+    // Another common error: forget to decrease tens after borrowing
+    const forgotBorrowDecrease = (onesA - onesB + 10) + (tensA - tensB) * 10
+    if (forgotBorrowDecrease !== correctAnswer && forgotBorrowDecrease > 0 && !distractors.includes(forgotBorrowDecrease)) {
+      distractors.push(forgotBorrowDecrease)
+    }
+  }
+  
+  // Error: off by 1
+  if (!distractors.includes(correctAnswer + 1)) distractors.push(correctAnswer + 1)
+  if (!distractors.includes(correctAnswer - 1)) distractors.push(correctAnswer - 1)
+  
+  // Error: added instead of subtracted
+  const added = a + b
+  if (added !== correctAnswer && !distractors.includes(added)) {
+    distractors.push(added)
+  }
+  
+  // Add near-miss values
+  const nearMisses = [correctAnswer + 5, correctAnswer - 5, correctAnswer + 10, correctAnswer - 10]
+  nearMisses.forEach(nm => {
+    if (nm > 0 && nm !== correctAnswer && !distractors.includes(nm)) {
+      distractors.push(nm)
+    }
+  })
+  
+  const distractorStrings = [...new Set(distractors.map(d => String(d)))]
+    .filter(d => d !== String(correctAnswer))
+    .slice(0, 4)
+  
+  while (distractorStrings.length < 4) {
+    const randomOffset = Math.floor(Math.random() * 20) - 10
+    const candidate = correctAnswer + randomOffset
+    if (candidate > 0 && candidate !== correctAnswer && !distractorStrings.includes(String(candidate))) {
+      distractorStrings.push(String(candidate))
+    }
+  }
+  
+  return distractorStrings.slice(0, 4)
+}
+
+// Generate realistic distractors for multiplication problems
+function generateMultiplicationDistractors(a: number, b: number, correctAnswer: number): string[] {
+  const distractors: number[] = []
+  
+  // Common error: multiplied digits separately (e.g., 8×6 = 48, but wrote 8×6 = 48 wrong)
+  const onesA = a % 10
+  const onesB = b % 10
+  const tensA = Math.floor(a / 10)
+  const tensB = Math.floor(b / 10)
+  
+  // Error: multiplied tens and ones separately
+  if (tensA > 0 && tensB > 0) {
+    const separateMultiply = (tensA * tensB * 100) + (onesA * onesB)
+    if (separateMultiply !== correctAnswer && !distractors.includes(separateMultiply)) {
+      distractors.push(separateMultiply)
+    }
+  }
+  
+  // Error: off by a factor
+  if (!distractors.includes(correctAnswer + a)) distractors.push(correctAnswer + a)
+  if (!distractors.includes(correctAnswer - a)) distractors.push(correctAnswer - a)
+  if (!distractors.includes(correctAnswer + b)) distractors.push(correctAnswer + b)
+  if (!distractors.includes(correctAnswer - b)) distractors.push(correctAnswer - b)
+  
+  // Error: added instead of multiplied
+  const added = a + b
+  if (added !== correctAnswer && !distractors.includes(added)) {
+    distractors.push(added)
+  }
+  
+  // Error: off by 1 or 2
+  if (!distractors.includes(correctAnswer + 1)) distractors.push(correctAnswer + 1)
+  if (!distractors.includes(correctAnswer - 1)) distractors.push(correctAnswer - 1)
+  if (!distractors.includes(correctAnswer + 2)) distractors.push(correctAnswer + 2)
+  if (!distractors.includes(correctAnswer - 2)) distractors.push(correctAnswer - 2)
+  
+  const distractorStrings = [...new Set(distractors.map(d => String(d)))]
+    .filter(d => d !== String(correctAnswer))
+    .slice(0, 4)
+  
+  while (distractorStrings.length < 4) {
+    const randomOffset = Math.floor(Math.random() * 30) - 15
+    const candidate = correctAnswer + randomOffset
+    if (candidate > 0 && candidate !== correctAnswer && !distractorStrings.includes(String(candidate))) {
+      distractorStrings.push(String(candidate))
+    }
+  }
+  
+  return distractorStrings.slice(0, 4)
+}
+
+// Generate realistic distractors for division problems
+function generateDivisionDistractors(a: number, b: number, correctAnswer: number): string[] {
+  const distractors: number[] = []
+  
+  // Error: divided in wrong order
+  const wrongOrder = b / a
+  if (wrongOrder !== correctAnswer && Number.isInteger(wrongOrder) && !distractors.includes(wrongOrder)) {
+    distractors.push(wrongOrder)
+  }
+  
+  // Error: multiplied instead of divided
+  const multiplied = a * b
+  if (multiplied !== correctAnswer && !distractors.includes(multiplied)) {
+    distractors.push(multiplied)
+  }
+  
+  // Error: off by 1
+  if (!distractors.includes(correctAnswer + 1)) distractors.push(correctAnswer + 1)
+  if (!distractors.includes(correctAnswer - 1)) distractors.push(correctAnswer - 1)
+  
+  // Error: remainder included
+  const withRemainder = Math.floor(a / b) + 1
+  if (withRemainder !== correctAnswer && !distractors.includes(withRemainder)) {
+    distractors.push(withRemainder)
+  }
+  
+  const distractorStrings = [...new Set(distractors.map(d => String(d)))]
+    .filter(d => d !== String(correctAnswer))
+    .slice(0, 4)
+  
+  while (distractorStrings.length < 4) {
+    const randomOffset = Math.floor(Math.random() * 10) - 5
+    const candidate = correctAnswer + randomOffset
+    if (candidate > 0 && candidate !== correctAnswer && !distractorStrings.includes(String(candidate))) {
+      distractorStrings.push(String(candidate))
+    }
+  }
+  
+  return distractorStrings.slice(0, 4)
+}
+
+// Generate distractors with randomization and realistic errors
+function generateDistractors(
+  operation: 'addition' | 'subtraction' | 'multiplication' | 'division',
+  a: number,
+  b: number,
+  correctAnswer: number
+): string[] {
+  let distractors: string[]
+  
+  switch (operation) {
+    case 'addition':
+      distractors = generateAdditionDistractors(a, b, correctAnswer)
+      break
+    case 'subtraction':
+      distractors = generateSubtractionDistractors(a, b, correctAnswer)
+      break
+    case 'multiplication':
+      distractors = generateMultiplicationDistractors(a, b, correctAnswer)
+      break
+    case 'division':
+      distractors = generateDivisionDistractors(a, b, correctAnswer)
+      break
+    default:
+      distractors = []
+  }
+  
+  // Combine correct answer with distractors and randomize
+  const allOptions = [String(correctAnswer), ...distractors]
+  return shuffleArray(allOptions)
+}
+
+// Dynamic question generators for arithmetic operations
+function generateDynamicAdditionQuestion(): any {
+  // Generate random 2-digit numbers
+  const a = Math.floor(Math.random() * 90) + 10 // 10-99
+  const b = Math.floor(Math.random() * 90) + 10 // 10-99
+  const correctAnswer = a + b
+  
+  const options = generateDistractors('addition', a, b, correctAnswer)
+  const correctIndex = options.indexOf(String(correctAnswer))
+  
+  return {
+    type: 'multiple_choice',
+    question: `What is ${a} + ${b}?`,
+    options: options,
+    correctAnswer: String(correctAnswer),
+    explanation: `Add the ones place: ${a % 10} + ${b % 10} = ${(a % 10) + (b % 10)}${(a % 10) + (b % 10) >= 10 ? ' (write ' + ((a % 10) + (b % 10)) % 10 + ', carry ' + Math.floor(((a % 10) + (b % 10)) / 10) + ')' : ''}. Add the tens place: ${Math.floor(a / 10)} + ${Math.floor(b / 10)}${(a % 10) + (b % 10) >= 10 ? ' + ' + Math.floor(((a % 10) + (b % 10)) / 10) : ''} = ${Math.floor(a / 10) + Math.floor(b / 10) + (Math.floor(((a % 10) + (b % 10)) / 10))}. Answer: ${correctAnswer}`
+  }
+}
+
+function generateDynamicSubtractionQuestion(): any {
+  // Generate random 2-digit numbers where first is larger
+  const a = Math.floor(Math.random() * 50) + 30 // 30-79
+  const b = Math.floor(Math.random() * 20) + 10 // 10-29
+  const correctAnswer = a - b
+  
+  const options = generateDistractors('subtraction', a, b, correctAnswer)
+  
+  return {
+    type: 'multiple_choice',
+    question: `What is ${a} - ${b}?`,
+    options: options,
+    correctAnswer: String(correctAnswer),
+    explanation: `${a} - ${b} = ${correctAnswer}`
+  }
+}
+
+function generateDynamicMultiplicationQuestion(): any {
+  // Generate random single and double digit numbers
+  const a = Math.floor(Math.random() * 13) + 1 // 1-13
+  const b = Math.floor(Math.random() * 13) + 1 // 1-13
+  const correctAnswer = a * b
+  
+  const options = generateDistractors('multiplication', a, b, correctAnswer)
+  
+  return {
+    type: 'multiple_choice',
+    question: `What is ${a} × ${b}?`,
+    options: options,
+    correctAnswer: String(correctAnswer),
+    explanation: `${a} × ${b} = ${correctAnswer}`
+  }
+}
+
+function generateDynamicDivisionQuestion(): any {
+  // Generate division problem with whole number answer
+  const divisor = Math.floor(Math.random() * 10) + 2 // 2-11
+  const quotient = Math.floor(Math.random() * 10) + 2 // 2-11
+  const dividend = divisor * quotient
+  
+  const options = generateDistractors('division', dividend, divisor, quotient)
+  
+  return {
+    type: 'multiple_choice',
+    question: `What is ${dividend} ÷ ${divisor}?`,
+    options: options,
+    correctAnswer: String(quotient),
+    explanation: `${dividend} ÷ ${divisor} = ${quotient}`
+  }
+}
+
 export async function generateDiagnosticQuestion(topic: any): Promise<any> {
   console.log('📝 [QUESTION GENERATOR] Generating question for topic:', {
     topicId: topic.id,
@@ -17,40 +350,36 @@ export async function generateDiagnosticQuestion(topic: any): Promise<any> {
   }
   const usedForTopic = usedQuestions.get(topic.id)!
   
+  // Check if this topic supports dynamic question generation
+  const dynamicTopics: Record<string, () => any> = {
+    'Basic Addition': generateDynamicAdditionQuestion,
+    'Basic Subtraction': generateDynamicSubtractionQuestion,
+    'Basic Multiplication': generateDynamicMultiplicationQuestion,
+    'Basic Division': generateDynamicDivisionQuestion
+  }
+  
+  // If topic supports dynamic generation, use it (no need for fixed templates)
+  if (dynamicTopics[topic.name]) {
+    const question = dynamicTopics[topic.name]()
+    // Randomize options if not already randomized
+    if (question.options && question.correctAnswer) {
+      question.options = shuffleArray(question.options)
+    }
+    return question
+  }
+  
   // CCAT-aligned question templates for all 26 Knowledge Graph topics
   // Questions follow CCAT formats: multiple choice with 5 options, predictable patterns
   const topicSpecificTemplates: Record<string, any[]> = {
     // ============================================
     // ARITHMETIC FOUNDATIONS (8 topics)
     // ============================================
-    'Basic Addition': [
-      { type: 'multiple_choice', question: `What is 15 + 27?`, options: ['40', '42', '43', '45', '52'], correctAnswer: '42', explanation: 'Add the ones place: 5 + 7 = 12 (write 2, carry 1). Add the tens place: 1 + 2 + 1 = 4. Answer: 42' },
-      { type: 'multiple_choice', question: `What is 23 + 19?`, options: ['40', '41', '42', '43', '44'], correctAnswer: '42', explanation: '23 + 19 = 42' },
-      { type: 'multiple_choice', question: `What is 34 + 28?`, options: ['60', '61', '62', '63', '64'], correctAnswer: '62', explanation: '34 + 28 = 62' },
-      { type: 'multiple_choice', question: `What is 47 + 38?`, options: ['83', '84', '85', '86', '87'], correctAnswer: '85', explanation: '47 + 38 = 85' },
-      { type: 'multiple_choice', question: `What is 56 + 29?`, options: ['83', '84', '85', '86', '87'], correctAnswer: '85', explanation: '56 + 29 = 85' }
-    ],
-    'Basic Subtraction': [
-      { type: 'multiple_choice', question: `What is 35 - 17?`, options: ['16', '17', '18', '19', '20'], correctAnswer: '18', explanation: '35 - 17 = 18' },
-      { type: 'multiple_choice', question: `What is 42 - 19?`, options: ['21', '22', '23', '24', '25'], correctAnswer: '23', explanation: '42 - 19 = 23' },
-      { type: 'multiple_choice', question: `What is 56 - 28?`, options: ['26', '27', '28', '29', '30'], correctAnswer: '28', explanation: '56 - 28 = 28' },
-      { type: 'multiple_choice', question: `What is 73 - 45?`, options: ['26', '27', '28', '29', '30'], correctAnswer: '28', explanation: '73 - 45 = 28' },
-      { type: 'multiple_choice', question: `What is 91 - 24?`, options: ['65', '66', '67', '68', '69'], correctAnswer: '67', explanation: '91 - 24 = 67' }
-    ],
-    'Basic Multiplication': [
-      { type: 'multiple_choice', question: `What is 8 × 6?`, options: ['46', '48', '50', '52', '54'], correctAnswer: '48', explanation: '8 × 6 = 48' },
-      { type: 'multiple_choice', question: `What is 7 × 9?`, options: ['61', '62', '63', '64', '65'], correctAnswer: '63', explanation: '7 × 9 = 63' },
-      { type: 'multiple_choice', question: `What is 12 × 4?`, options: ['46', '47', '48', '49', '50'], correctAnswer: '48', explanation: '12 × 4 = 48' },
-      { type: 'multiple_choice', question: `What is 9 × 7?`, options: ['61', '62', '63', '64', '65'], correctAnswer: '63', explanation: '9 × 7 = 63' },
-      { type: 'multiple_choice', question: `What is 13 × 5?`, options: ['63', '64', '65', '66', '67'], correctAnswer: '65', explanation: '13 × 5 = 65' }
-    ],
-    'Basic Division': [
-      { type: 'multiple_choice', question: `What is 24 ÷ 3?`, options: ['6', '7', '8', '9', '10'], correctAnswer: '8', explanation: '24 ÷ 3 = 8' },
-      { type: 'multiple_choice', question: `What is 36 ÷ 4?`, options: ['7', '8', '9', '10', '11'], correctAnswer: '9', explanation: '36 ÷ 4 = 9' },
-      { type: 'multiple_choice', question: `What is 42 ÷ 6?`, options: ['6', '7', '8', '9', '10'], correctAnswer: '7', explanation: '42 ÷ 6 = 7' },
-      { type: 'multiple_choice', question: `What is 56 ÷ 7?`, options: ['6', '7', '8', '9', '10'], correctAnswer: '8', explanation: '56 ÷ 7 = 8' },
-      { type: 'multiple_choice', question: `What is 63 ÷ 9?`, options: ['6', '7', '8', '9', '10'], correctAnswer: '7', explanation: '63 ÷ 9 = 7' }
-    ],
+    // Note: Basic Addition, Subtraction, Multiplication, Division use dynamic generation above
+    // Keeping empty arrays here for reference but they won't be used
+    'Basic Addition': [],
+    'Basic Subtraction': [],
+    'Basic Multiplication': [],
+    'Basic Division': [],
     'Order of Operations': [
       { type: 'multiple_choice', question: `What is 2 + 3 × 4?`, options: ['14', '16', '20', '24', '26'], correctAnswer: '14', explanation: 'Order of operations: 3 × 4 = 12, then 2 + 12 = 14' },
       { type: 'multiple_choice', question: `What is (2 + 3) × 4?`, options: ['14', '16', '20', '24', '26'], correctAnswer: '20', explanation: 'Parentheses first: 2 + 3 = 5, then 5 × 4 = 20' },
@@ -341,6 +670,11 @@ export async function generateDiagnosticQuestion(topic: any): Promise<any> {
   
   // Mark this question as used for this topic
   usedForTopic.add(selectedQuestion.question)
+  
+  // Randomize the order of answer options
+  if (selectedQuestion.options && selectedQuestion.correctAnswer) {
+    selectedQuestion.options = shuffleArray(selectedQuestion.options)
+  }
   
   console.log('✅ [QUESTION GENERATOR] Selected question:', {
     topicName: topic.name,

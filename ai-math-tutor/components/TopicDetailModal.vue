@@ -188,6 +188,7 @@ const handleStartLearning = () => {
               :class="[
                 'size-6',
                 getMasteryStatus() === 'mastered' ? 'text-green-400' :
+                getMasteryStatus() === 'near-mastery' ? 'text-cyan-400' :
                 getMasteryStatus() === 'frontier' ? 'text-pink-400' :
                 getMasteryStatus() === 'in-progress' ? 'text-yellow-400' :
                 'text-gray-500'
@@ -197,7 +198,7 @@ const handleStartLearning = () => {
           </div>
           <p class="text-sm text-gray-400">{{ formatDomainName(topicData.domain) }}</p>
         </div>
-        <button @click="handleClose" class="text-gray-400 hover:text-white transition-colors">
+        <button @click="handleClose" class="text-gray-400 hover:text-white transition-colors cursor-pointer">
           <UIcon name="i-lucide-x" class="size-6" />
         </button>
       </div>

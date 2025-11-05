@@ -84,7 +84,7 @@
                 :key="index"
                 @click="selectedAnswer = option"
                 :disabled="processing"
-                class="w-full group relative overflow-hidden rounded-xl border-2 transition-all duration-200 text-left"
+                class="w-full group relative overflow-hidden rounded-xl border-2 transition-all duration-200 text-left cursor-pointer"
                 :class="{
                   'bg-gradient-to-r from-pink-500 to-pink-600 border-pink-400 shadow-lg shadow-pink-500/30 scale-[1.02]': selectedAnswer === option,
                   'bg-gray-900/50 border-gray-700 hover:border-pink-500/50 hover:bg-gray-800/50': selectedAnswer !== option,
@@ -124,7 +124,7 @@
             <UButton
               color="primary"
               size="xl"
-              class="w-full sm:w-48 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transition-all duration-200"
+              class="w-full sm:w-48 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transition-all duration-200 cursor-pointer"
               :disabled="!selectedAnswer || processing"
               :loading="processing"
               @click="submitSelectedAnswer"
@@ -136,7 +136,7 @@
             </UButton>
             <UButton
               size="xl"
-              class="w-full sm:w-48 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/40 transition-all duration-200 border-0"
+              class="w-full sm:w-48 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/40 transition-all duration-200 border-0 cursor-pointer"
               :disabled="processing"
               @click="submitIdontKnow"
             >
@@ -163,25 +163,36 @@
       </UCard>
 
       <!-- Completion Screen -->
-      <UCard 
-        v-else-if="isComplete && placement" 
-        class="bg-black/90 border border-pink-500/20 shadow-xl shadow-pink-500/10 transition-all duration-300"
-        :ui="{ 
-          header: 'pb-4 border-b border-pink-500/20',
-          body: 'py-6 md:py-8'
-        }"
-      >
-        <template #header>
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-2xl flex items-center justify-center border border-green-500/30">
-              <UIcon name="i-lucide-check-circle-2" class="size-6 md:size-8 text-green-400" />
+      <div v-else-if="isComplete && placement">
+        <!-- Header Navigation -->
+        <div class="mb-6 flex items-center justify-between">
+          <NuxtLink 
+            to="/"
+            class="inline-flex items-center gap-2 text-gray-400 hover:text-pink-400 transition-colors cursor-pointer"
+          >
+            <UIcon name="i-lucide-arrow-left" class="size-5" />
+            <span class="text-sm font-medium">Back to Home</span>
+          </NuxtLink>
+        </div>
+
+        <UCard 
+          class="bg-black/90 border border-pink-500/20 shadow-xl shadow-pink-500/10 transition-all duration-300"
+          :ui="{ 
+            header: 'pb-4 border-b border-pink-500/20',
+            body: 'py-6 md:py-8'
+          }"
+        >
+          <template #header>
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center border border-cyan-500/30">
+                <UIcon name="i-lucide-check-circle-2" class="size-6 md:size-8 text-cyan-400" />
+              </div>
+              <div>
+                <h3 class="text-2xl md:text-3xl font-bold text-white">Diagnostic Complete!</h3>
+                <p class="text-sm text-gray-400 mt-1">Your personalized learning path is ready</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-2xl md:text-3xl font-bold text-white">Diagnostic Complete!</h3>
-              <p class="text-sm text-gray-400 mt-1">Your personalized learning path is ready</p>
-            </div>
-          </div>
-        </template>
+          </template>
 
         <div class="space-y-6 md:space-y-8">
           <!-- Save Progress Prompt -->
@@ -198,8 +209,8 @@
               <h4 class="text-xl font-bold text-white">Your Knowledge Frontier</h4>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              <div class="text-center p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
-                <div class="text-3xl md:text-4xl font-bold text-pink-400 mb-2">{{ placement.topicsWithStrongUnderstanding ?? placement.topicsMastered }}</div>
+              <div class="text-center p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                <div class="text-3xl md:text-4xl font-bold text-cyan-400 mb-2">{{ placement.topicsWithStrongUnderstanding ?? placement.topicsMastered }}</div>
                 <div class="text-xs md:text-sm text-gray-400 font-medium">Strong Understanding</div>
               </div>
               <div class="text-center p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
@@ -210,8 +221,8 @@
                 <div class="text-3xl md:text-4xl font-bold text-blue-400 mb-2">{{ placement.topicsUnknown }}</div>
                 <div class="text-xs md:text-sm text-gray-400 font-medium">Unknown</div>
               </div>
-              <div class="text-center p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                <div class="text-3xl md:text-4xl font-bold text-green-400 mb-2">{{ placement.frontierTopics }}</div>
+              <div class="text-center p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
+                <div class="text-3xl md:text-4xl font-bold text-pink-400 mb-2">{{ placement.frontierTopics }}</div>
                 <div class="text-xs md:text-sm text-gray-400 font-medium">Ready to Learn</div>
               </div>
             </div>
@@ -220,12 +231,12 @@
           <!-- Topics with Strong Understanding List -->
           <div 
             v-if="(placement.strongUnderstandingTopics && placement.strongUnderstandingTopics.length > 0) || (placement.masteredTopics && placement.masteredTopics.length > 0)"
-            class="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent rounded-xl p-6 md:p-8 border border-green-500/20 shadow-lg shadow-green-500/5"
+            class="bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent rounded-xl p-6 md:p-8 border border-cyan-500/20 shadow-lg shadow-cyan-500/5"
           >
             <div class="flex items-center gap-3 mb-4">
-              <UIcon name="i-lucide-check-circle-2" class="size-5 text-green-400" />
+              <UIcon name="i-lucide-check-circle-2" class="size-5 text-cyan-400" />
               <h4 class="text-xl font-bold text-white">Topics with Strong Understanding</h4>
-              <UBadge color="success" variant="subtle" size="sm" class="ml-auto">
+              <UBadge color="info" variant="subtle" size="sm" class="ml-auto">
                 {{ (placement.strongUnderstandingTopics ?? placement.masteredTopics)?.length }}
               </UBadge>
             </div>
@@ -233,12 +244,13 @@
               <span class="font-semibold text-yellow-400">Complete these to 100% mastery before advancing!</span> These topics showed strong understanding (80%) during the diagnostic, but true mastery requires practice verification. Finish these first to build a solid foundation.
             </p>
             <div class="max-h-64 overflow-y-auto space-y-2 pr-2">
-              <div
+              <button
                 v-for="topic in (placement.strongUnderstandingTopics ?? placement.masteredTopics)"
                 :key="topic.id"
-                class="flex items-center gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10 hover:bg-green-500/10 transition-colors"
+                @click="startTopic(topic.id)"
+                class="w-full flex items-center gap-3 p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer text-left"
               >
-                <UIcon name="i-lucide-check" class="size-5 text-green-400 flex-shrink-0" />
+                <UIcon name="i-lucide-check" class="size-5 text-cyan-400 flex-shrink-0" />
                 <div class="flex-1 min-w-0">
                   <p class="font-semibold text-white text-sm">{{ topic.name }}</p>
                   <p class="text-xs text-gray-400">{{ topic.domain?.replace('_', ' ') || 'General' }}</p>
@@ -246,19 +258,20 @@
                 <UBadge color="warning" variant="subtle" size="xs" class="font-semibold">
                   {{ topic.masteryLevel || 80 }}% → 100%
                 </UBadge>
-              </div>
+              </button>
             </div>
           </div>
 
           <!-- Recommended Starting Point -->
-          <div 
+          <button
             v-if="placement.recommendedStartingPoint" 
-            class="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-5 md:p-6 border border-green-500/20 shadow-sm"
+            @click="startTopic(placement.recommendedStartingPoint.id)"
+            class="w-full bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl p-5 md:p-6 border border-cyan-500/20 shadow-sm hover:bg-cyan-500/15 transition-colors cursor-pointer text-left"
           >
             <div class="flex items-start gap-3">
-              <UIcon name="i-lucide-map-pin" class="size-5 text-green-400 flex-shrink-0 mt-0.5" />
+              <UIcon name="i-lucide-map-pin" class="size-5 text-cyan-400 flex-shrink-0 mt-0.5" />
               <div class="flex-1">
-                <p class="text-sm font-semibold text-green-300 mb-2">
+                <p class="text-sm font-semibold text-cyan-300 mb-2">
                   Recommended Starting Point
                 </p>
                 <p class="text-lg font-bold text-white mb-2">{{ placement.recommendedStartingPoint.name }}</p>
@@ -271,14 +284,14 @@
                 </div>
               </div>
             </div>
-          </div>
+          </button>
 
           <!-- Action Buttons -->
           <div class="flex flex-col sm:flex-row gap-3 pt-2">
             <UButton
               color="primary"
               size="xl"
-              class="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transition-all duration-200"
+              class="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transition-all duration-200 cursor-pointer"
               @click="goToLearning"
             >
               Start Learning!
@@ -288,15 +301,27 @@
               color="gray"
               variant="outline"
               size="xl"
-              class="sm:flex-shrink-0 font-semibold border-gray-700 hover:border-gray-600 hover:bg-gray-900/50 transition-all duration-200"
+              class="sm:flex-shrink-0 font-semibold border-gray-700 hover:border-gray-600 hover:bg-gray-900/50 transition-all duration-200 cursor-pointer"
               @click="viewFrontier"
             >
               <UIcon name="i-lucide-brain" class="size-5 mr-2" />
               View Knowledge Graph
             </UButton>
           </div>
+
+          <!-- Retake Diagnostic Link -->
+          <div class="pt-4 text-center">
+            <button
+              @click="startNewDiagnostic"
+              class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-pink-400 transition-colors cursor-pointer"
+            >
+              <UIcon name="i-lucide-refresh-cw" class="size-4" />
+              <span>Take diagnostic again</span>
+            </button>
+          </div>
         </div>
-      </UCard>
+        </UCard>
+      </div>
 
       <!-- Error State -->
       <UCard 
@@ -314,7 +339,7 @@
             color="primary"
             variant="outline"
             size="lg"
-            class="border-pink-500/50 hover:bg-pink-500/10 hover:border-pink-500"
+            class="border-pink-500/50 hover:bg-pink-500/10 hover:border-pink-500 cursor-pointer"
             @click="startNewDiagnostic"
           >
             <UIcon name="i-lucide-refresh-cw" class="size-5 mr-2" />
@@ -329,6 +354,16 @@
       v-model="showAuthModal"
       :has-anonymous-data="true"
     />
+
+    <!-- Knowledge Graph Sidebar -->
+    <ClientOnly>
+      <KGSidebar
+        v-model="showKGSidebar"
+        :user-id="undefined"
+        :session-id="sessionId"
+        @topic-select="handleTopicSelect"
+      />
+    </ClientOnly>
   </div>
 </template>
 
@@ -338,6 +373,19 @@ import { useKaTeX } from '~/composables/useKaTeX'
 
 const diagnostic = useDiagnostic()
 const { renderMath } = useKaTeX()
+
+// Helper to get or create session ID
+const getSessionId = () => {
+  if (process.client) {
+    let sessionId = localStorage.getItem('chat_session_id')
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('chat_session_id', sessionId)
+    }
+    return sessionId
+  }
+  return null
+}
 
 // State
 const loading = ref(true)
@@ -349,15 +397,21 @@ const currentTopic = ref<any>(null)
 const selectedAnswer = ref<string>('')
 const questionNumber = ref(1)
 const showAuthModal = ref(false)
+const showKGSidebar = ref(false)
 const answers = ref<DiagnosticAnswer[]>([])
 const isComplete = ref(false)
 const placement = ref<any>(null)
 const diagnosticSession = ref<DiagnosticSession | null>(null)
 const topicsTested = ref<string[]>([])
 const testedRootTopics = ref<string[]>([])
+const sessionId = ref<string>('')
 
 // Start diagnostic on mount
 onMounted(async () => {
+  if (process.client) {
+    // Get or create session ID
+    sessionId.value = getSessionId() || ''
+  }
   await startNewDiagnostic()
 })
 
@@ -510,10 +564,29 @@ const goToLearning = () => {
 }
 
 const viewFrontier = () => {
-  // Navigate and open knowledge graph
+  // Open knowledge graph sidebar instead of navigating
+  showKGSidebar.value = true
+}
+
+const handleTopicSelect = (topicId: string) => {
+  // Navigate to home with topic selected
   navigateTo({
     path: '/',
-    query: { openKG: 'true' }
+    query: {
+      startTopic: topicId,
+      fromDiagnostic: 'true'
+    }
+  })
+}
+
+const startTopic = (topicId: string) => {
+  // Navigate with topic ID as query parameter to start practicing
+  navigateTo({
+    path: '/',
+    query: {
+      startTopic: topicId,
+      fromDiagnostic: 'true'
+    }
   })
 }
 </script>

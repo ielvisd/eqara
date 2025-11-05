@@ -13,7 +13,7 @@
     </div>
 
     <!-- State 1: New Student (No Diagnostic) -->
-    <div v-else-if="isNew" class="bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 rounded-xl p-8 text-center">
+    <div v-else-if="isNew && !context.hasCompletedDiagnostic" class="bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 rounded-xl p-8 text-center">
       <UIcon name="i-lucide-target" class="size-16 text-pink-400 mx-auto mb-4" />
       <h2 class="text-3xl font-bold text-white mb-2">Welcome to Your Math Journey!</h2>
       <p class="text-gray-300 text-lg mb-6">Let's find your perfect starting point</p>
@@ -40,6 +40,43 @@
           <span>Answer honestly for best placement</span>
         </div>
       </div>
+    </div>
+
+    <!-- State 1b: Diagnostic Complete but No Active Learning -->
+    <div v-else-if="isNew && context.hasCompletedDiagnostic" class="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-xl p-8 text-center">
+      <UIcon name="i-lucide-check-circle-2" class="size-16 text-cyan-400 mx-auto mb-4" />
+      <h2 class="text-3xl font-bold text-white mb-2">Ready to Practice!</h2>
+      <p class="text-gray-300 text-lg mb-6">
+        Take diagnostic again or enter a problem below to start practicing
+      </p>
+      
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <NuxtLink to="/diagnostic">
+          <UButton 
+            size="lg" 
+            color="gray"
+            variant="outline"
+            class="px-6 py-3"
+            icon="i-lucide-refresh-cw"
+          >
+            Retake Diagnostic
+          </UButton>
+        </NuxtLink>
+        
+        <UButton 
+          size="lg" 
+          color="pink"
+          class="px-6 py-3"
+          icon="i-lucide-brain"
+          @click="emit('view-kg')"
+        >
+          View Knowledge Graph
+        </UButton>
+      </div>
+      
+      <p class="text-sm text-gray-400 mt-6">
+        Your personalized learning path is ready. Start practicing by entering a math problem in the chat below!
+      </p>
     </div>
 
     <!-- State 2: Active Learning -->
@@ -119,14 +156,30 @@
           </div>
         </div>
         
-        <UButton 
-          variant="ghost" 
-          class="mt-4 w-full text-gray-400 hover:text-pink-400"
-          icon="i-lucide-brain"
-          @click="emit('view-kg')"
-        >
-          View Knowledge Graph
-        </UButton>
+        <div class="mt-4 space-y-2">
+          <UButton 
+            variant="ghost" 
+            class="w-full text-gray-400 hover:text-pink-400"
+            icon="i-lucide-brain"
+            @click="emit('view-kg')"
+          >
+            View Knowledge Graph
+          </UButton>
+          
+          <NuxtLink 
+            v-if="context.hasCompletedDiagnostic"
+            to="/diagnostic"
+            class="block"
+          >
+            <UButton 
+              variant="ghost" 
+              class="w-full text-gray-400 hover:text-pink-400"
+              icon="i-lucide-refresh-cw"
+            >
+              Retake Diagnostic
+            </UButton>
+          </NuxtLink>
+        </div>
       </div>
     </template>
 

@@ -57,20 +57,6 @@ export const useStudentState = () => {
     }
 
     try {
-      // Fetch diagnostic status (handle errors gracefully)
-      let hasCompletedDiagnostic = false
-      try {
-        const diagnosticResponse = await $fetch<any>('/api/diagnostic/start', {
-          method: 'POST',
-          body: { userId, sessionId }
-        })
-        hasCompletedDiagnostic = diagnosticResponse?.sessionId ? true : false
-      } catch (diagErr) {
-        // If diagnostic check fails, assume new user
-        console.warn('Failed to check diagnostic status:', diagErr)
-        hasCompletedDiagnostic = false
-      }
-
       // Fetch mastery domain data (handle errors gracefully)
       // Note: This endpoint needs a specific domain, so we'll skip it for now
       // and rely on the frontier topics to determine progress
@@ -89,6 +75,7 @@ export const useStudentState = () => {
       }
 
       // Fetch frontier topics to find current learning topic (handle errors gracefully)
+      // Frontier topics only exist after diagnostic completion, so this is our check
       let frontierTopics: any[] = []
       try {
         const frontierResponse = await $fetch<any>('/api/knowledge-graph/frontier', {
@@ -99,6 +86,10 @@ export const useStudentState = () => {
       } catch (frontierErr) {
         console.warn('Failed to fetch frontier topics:', frontierErr)
       }
+
+      // Check if diagnostic is complete: if frontier topics exist, diagnostic was completed
+      // Alternatively, if there are any mastery records, diagnostic was completed
+      const hasCompletedDiagnostic = frontierTopics.length > 0
 
       // Determine student state
       let state: StudentState = 'new'
