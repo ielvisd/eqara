@@ -11,17 +11,43 @@ const emit = defineEmits<{
 }>()
 
 const kgViz = useKGVisualization()
-const treeItems = ref<TreeItem[]>([])
+// Use shallowRef for large array (Vue 3 best practice - prevents deep reactivity)
+const treeItems = shallowRef<TreeItem[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const selectedTopic = ref<string | null>(null)
 
+// Component-level state tracking
+const isInitialized = ref(false)
+const lastProps = ref<{ userId?: string; sessionId?: string } | null>(null)
+
+// Check if props actually changed
+const propsChanged = computed(() => {
+  if (!lastProps.value) return true
+  return lastProps.value.userId !== props.userId || lastProps.value.sessionId !== props.sessionId
+})
+
 // Load tree data
 const loadTreeData = async () => {
+  // Skip if already initialized and props haven't changed
+  if (isInitialized.value && !propsChanged.value) {
+    // Check cache synchronously first
+    if (kgViz.isCached(props.userId, props.sessionId)) {
+      console.log('⚡ KnowledgeGraphTree: Data already loaded and cached, skipping reload', {
+        userId: props.userId,
+        sessionId: props.sessionId,
+        timestamp: new Date().toISOString()
+      })
+      return
+    }
+  }
+  
   const startTime = performance.now()
   console.log('🔄 KnowledgeGraphTree: Starting to load tree data...', {
     userId: props.userId,
     sessionId: props.sessionId,
+    isInitialized: isInitialized.value,
+    propsChanged: propsChanged.value,
     timestamp: new Date().toISOString()
   })
   
@@ -30,6 +56,10 @@ const loadTreeData = async () => {
   
   try {
     treeItems.value = await kgViz.buildTopicTree(props.userId, props.sessionId)
+    
+    // Mark as initialized and save current props
+    isInitialized.value = true
+    lastProps.value = { userId: props.userId, sessionId: props.sessionId }
     const loadDuration = performance.now() - startTime
     console.log('✅ KnowledgeGraphTree: Tree data loaded successfully!', {
       itemsCount: treeItems.value.length,
@@ -58,15 +88,20 @@ const onSelect = (event: any) => {
   }
 }
 
-// Reload when props change
+// Reload when props change (only if props actually changed)
 watch(() => [props.userId, props.sessionId], () => {
-  loadTreeData()
+  if (propsChanged.value) {
+    loadTreeData()
+  }
 }, { immediate: true })
 
 // Manual refresh
 const refresh = () => {
   // Clear cache to force reload
   kgViz.clearCache(props.userId, props.sessionId)
+  // Reset initialization state to force reload
+  isInitialized.value = false
+  lastProps.value = null
   loadTreeData()
 }
 

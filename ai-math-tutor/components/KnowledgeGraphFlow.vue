@@ -15,20 +15,46 @@ const emit = defineEmits<{
 }>()
 
 const kgViz = useKGVisualization()
-const nodes = ref<Node[]>([])
-const edges = ref<Edge[]>([])
+// Use shallowRef for large arrays (Vue 3 best practice - prevents deep reactivity)
+const nodes = shallowRef<Node[]>([])
+const edges = shallowRef<Edge[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// Component-level state tracking
+const isInitialized = ref(false)
+const lastProps = ref<{ userId?: string; sessionId?: string } | null>(null)
 
 // Initialize Vue Flow
 const { fitView, zoomTo } = useVueFlow()
 
+// Check if props actually changed
+const propsChanged = computed(() => {
+  if (!lastProps.value) return true
+  return lastProps.value.userId !== props.userId || lastProps.value.sessionId !== props.sessionId
+})
+
 // Load KG data
 const loadKGData = async () => {
+  // Skip if already initialized and props haven't changed
+  if (isInitialized.value && !propsChanged.value) {
+    // Check cache synchronously first
+    if (kgViz.isCached(props.userId, props.sessionId)) {
+      console.log('⚡ KnowledgeGraphFlow: Data already loaded and cached, skipping reload', {
+        userId: props.userId,
+        sessionId: props.sessionId,
+        timestamp: new Date().toISOString()
+      })
+      return
+    }
+  }
+  
   const startTime = performance.now()
   console.log('🔄 KnowledgeGraphFlow: Starting to load KG data...', {
     userId: props.userId,
     sessionId: props.sessionId,
+    isInitialized: isInitialized.value,
+    propsChanged: propsChanged.value,
     timestamp: new Date().toISOString()
   })
   
@@ -39,6 +65,10 @@ const loadKGData = async () => {
     const data = await kgViz.buildVueFlowData(props.userId, props.sessionId)
     nodes.value = data.nodes
     edges.value = data.edges
+    
+    // Mark as initialized and save current props
+    isInitialized.value = true
+    lastProps.value = { userId: props.userId, sessionId: props.sessionId }
     
     const loadDuration = performance.now() - startTime
     console.log('✅ KnowledgeGraphFlow: KG data loaded successfully!', {
@@ -90,15 +120,20 @@ const onNodeDoubleClick = ({ node }: { node: Node }) => {
   fitView({ nodes: [node.id], duration: 300, padding: 0.5 })
 }
 
-// Reload data when props change
+// Reload data when props change (only if props actually changed)
 watch(() => [props.userId, props.sessionId], () => {
-  loadKGData()
+  if (propsChanged.value) {
+    loadKGData()
+  }
 }, { immediate: true })
 
 // Manual refresh
 const refresh = () => {
   // Clear cache to force reload
   kgViz.clearCache(props.userId, props.sessionId)
+  // Reset initialization state to force reload
+  isInitialized.value = false
+  lastProps.value = null
   loadKGData()
 }
 

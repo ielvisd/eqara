@@ -25,46 +25,102 @@
         <div class="lg:col-span-2">
           <UCard class="shadow-2xl border border-pink-500/20 bg-black/90 backdrop-blur-sm">
         <template #header>
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg shadow-pink-500/50">
-                <UIcon name="i-lucide-message-circle" class="size-5 text-white" />
+                <UIcon name="i-lucide-graduation-cap" class="size-5 text-white" />
               </div>
               <div>
-                <h3 class="text-2xl font-bold text-white">Eqara</h3>
-                <p class="text-sm text-gray-400">Get step-by-step guidance and earn XP as you learn!</p>
+                <h3 class="text-2xl font-bold text-white">🎓 Eqara</h3>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <div v-if="gameState.xp > 0" class="px-3 py-1 bg-pink-500/20 text-pink-400 text-xs font-medium rounded-full border border-pink-500/30">
-                <UIcon name="i-lucide-trophy" class="size-3 mr-1" />
-                {{ gameState.xp }} XP
+            <div class="flex items-center gap-4">
+              <!-- XP, Level, Streak Display -->
+              <div v-if="gameState.xp > 0" class="flex items-center gap-3 text-sm">
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-pink-500/20 text-pink-400 font-medium rounded-full border border-pink-500/30">
+                  <UIcon name="i-lucide-trophy" class="size-3.5" />
+                  <span class="whitespace-nowrap">{{ gameState.xp }} XP</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-400 font-medium rounded-full border border-purple-500/30">
+                  <UIcon name="i-lucide-star" class="size-3.5" />
+                  <span class="whitespace-nowrap">Level {{ gameState.level }}</span>
+                </div>
+                <div v-if="gameState.streak > 0" class="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 text-orange-400 font-medium rounded-full border border-orange-500/30">
+                  <UIcon name="i-lucide-flame" class="size-3.5" />
+                  <span class="whitespace-nowrap">{{ gameState.streak }} Day</span>
+                </div>
               </div>
-              <UButton
-                icon="i-lucide-brain"
-                color="primary"
-                variant="ghost"
-                size="sm"
-                class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
-                @click="handleOpenKGSidebar"
-              >
-                <span class="hidden sm:inline">Knowledge Graph</span>
-              </UButton>
-              <UButton
-                v-if="messages.length > 0"
-                icon="i-lucide-rotate-ccw"
-                color="primary"
-                variant="ghost"
-                size="sm"
-                :disabled="isProcessing"
-                class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
-                @click="resetConversation"
-              >
-                Reset
-              </UButton>
+              
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2">
+                <UButton
+                  icon="i-lucide-brain"
+                  color="primary"
+                  variant="ghost"
+                  size="sm"
+                  class="text-gray-400 hover:text-pink-400 hover:bg-pink-500/10"
+                  @click="handleOpenKGSidebar"
+                  @mouseenter="handleKGButtonHover"
+                >
+                  <span class="hidden sm:inline">Knowledge Graph</span>
+                </UButton>
+              </div>
             </div>
           </div>
         </template>
+
+        <!-- Contextual Banners -->
+        <div v-if="showHintBanner || showRemediationBanner || (dueReviewCount > 0 && messages.length > 0)" class="mb-4 space-y-3">
+          <!-- Review Due Banner (contextual when chatting) -->
+          <div v-if="dueReviewCount > 0 && messages.length > 0" class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-refresh-cw" class="size-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div class="flex-1">
+                <h4 class="text-sm font-semibold text-blue-300 mb-1">📚 {{ dueReviewCount }} Topics Ready for Review</h4>
+                <p class="text-xs text-blue-200/80 mb-2">
+                  Your memory is getting fuzzy on some topics - quick reviews now will help you retain them!
+                </p>
+                <UButton 
+                  size="xs" 
+                  color="blue"
+                  icon="i-lucide-arrow-right"
+                  trailing
+                  @click="showReviewSession = true"
+                >
+                  Start Review Session
+                </UButton>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hint Banner (stuck for 2+ turns) -->
+          <div v-if="showHintBanner" class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-lightbulb" class="size-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div class="flex-1">
+                <h4 class="text-sm font-semibold text-blue-300 mb-1">💡 Hint Available</h4>
+                <p class="text-xs text-blue-200/80">
+                  Feeling stuck? I can help by reminding you of the foundations you've learned!
+                  Just ask for a hint in your next message.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Remediation Banner (lesson failed, needs prerequisite review) -->
+          <div v-if="showRemediationBanner" class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-rotate-ccw" class="size-5 text-purple-400 flex-shrink-0 mt-0.5" />
+              <div class="flex-1">
+                <h4 class="text-sm font-semibold text-purple-300 mb-1">🎯 Let's Build Stronger Foundations</h4>
+                <p class="text-xs text-purple-200/80">
+                  This topic is challenging right now. Let's review some prerequisite topics to make it easier!
+                  I'll guide you through the foundations you need.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Chat Messages -->
         <div v-if="messages.length > 0" class="mb-6 min-h-[400px] max-h-[600px] overflow-hidden border border-pink-500/20 rounded-lg bg-black/50">
@@ -86,8 +142,18 @@
                           <div class="w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center">
                             <UIcon name="i-lucide-brain" class="size-4 text-white" />
                           </div>
-                          <div>
-                            <span class="text-sm font-medium text-white">Eqara</span>
+                          <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                              <span class="text-sm font-medium text-white">Eqara</span>
+                              <!-- Hint indicator if message contains hint keywords -->
+                              <span v-if="isHintMessage(msg)" class="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+                                💡 Hint
+                              </span>
+                              <!-- Remediation indicator if message mentions prerequisites -->
+                              <span v-if="isRemediationMessage(msg)" class="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+                                🎯 Foundation
+                              </span>
+                            </div>
                             <div v-if="msg.xpReward" class="text-xs text-pink-400 flex items-center gap-1">
                               <UIcon name="i-lucide-sparkles" class="size-3" />
                               +{{ msg.xpReward }} XP
@@ -124,8 +190,18 @@
           </div>
         </div>
 
-        <!-- Empty State -->
-        <div v-else class="min-h-[400px] flex items-center justify-center">
+        <!-- Dashboard Home (when no messages) -->
+        <div v-else class="min-h-[400px]">
+          <DashboardHome 
+            @continue-learning="handleContinueLearning"
+            @start-review="showReviewSession = true"
+            @view-kg="handleOpenKGSidebar"
+            @practice-quiz="showQuizInterface = true"
+          />
+        </div>
+
+        <!-- Legacy Empty State (fallback) -->
+        <div v-if="false" class="min-h-[400px] flex items-center justify-center">
           <div class="text-center space-y-6 max-w-md">
             <div class="w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg shadow-pink-500/50 mx-auto">
               <span class="text-4xl">🎓</span>
@@ -396,6 +472,16 @@
         @topic-select="handleTopicSelect"
       />
     </ClientOnly>
+
+    <!-- Review Session Modal -->
+    <UModal v-model="showReviewSession" :ui="{ width: 'max-w-5xl' }">
+      <ReviewSession @close="showReviewSession = false" />
+    </UModal>
+
+    <!-- Quiz Modal -->
+    <UModal v-model="showQuizInterface" :ui="{ width: 'max-w-5xl' }">
+      <QuizInterface @close="showQuizInterface = false" />
+    </UModal>
   </div>
 </template>
 
@@ -431,7 +517,18 @@ const isDragging = ref(false)
 const chatStatus = ref<'ready' | 'submitted' | 'streaming' | 'error'>('ready')
 const sessionId = ref<string>('')
 const showKGSidebar = ref(false)
+const showQuizInterface = ref(false)
+const showReviewSession = ref(false)
 let unsubscribeChat: (() => void) | null = null
+
+// Smart button visibility
+const dueReviewCount = ref(0)
+const hasPracticedTopics = ref(false)
+
+// Hint and remediation tracking
+const stuckTurnCount = ref(0)
+const showHintBanner = ref(false)
+const showRemediationBanner = ref(false)
 
 // Computed to check if file exists
 const hasFile = computed(() => {
@@ -792,6 +889,9 @@ const processImage = async () => {
     await saveMessage(assistantMessage, sessionId.value)
     await addXP(10)
 
+    // Update hint/remediation banners
+    updateBanners()
+
     chatStatus.value = 'ready'
     
     toast.add({
@@ -900,6 +1000,9 @@ const processText = async () => {
       await addXP(assistantMessage.xpReward)
     }
 
+    // Update hint/remediation banners
+    updateBanners()
+
     chatStatus.value = 'ready'
     
     toast.add({
@@ -957,6 +1060,52 @@ const formatTime = (timestamp: Date) => {
   return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+// Check if message is a hint (contains hint keywords)
+const isHintMessage = (msg: typeof messages.value[0]) => {
+  const content = (msg.content || '').toLowerCase()
+  return /remember|foundation|prerequisite|secret scroll|let'?s review|builds on|think back to/i.test(content)
+}
+
+// Check if message is a remediation message (mentions prerequisite topics explicitly)
+const isRemediationMessage = (msg: typeof messages.value[0]) => {
+  const content = (msg.content || '').toLowerCase()
+  return /let'?s strengthen|review.*foundation|prerequisite|build.*foundation|consolidation|take a break/i.test(content)
+}
+
+// Count stuck turns (user responses indicating confusion/stuck)
+const countStuckTurns = () => {
+  let count = 0
+  // Look backwards through recent messages
+  for (let i = messages.value.length - 1; i >= 0 && count < 5; i--) {
+    const msg = messages.value[i]
+    if (msg.role === 'user') {
+      const content = (msg.content || '').toLowerCase()
+      const isStuck = /(don'?t know|dunno|idk|not sure|unsure|cannot|can'?t|confused|stuck|help|no idea)/i.test(content) || content.length < 10
+      if (isStuck) {
+        count++
+      } else if (content.length >= 10) {
+        // Real answer attempt - stop counting
+        break
+      }
+    }
+  }
+  return count
+}
+
+// Update hint/remediation banners based on conversation state
+const updateBanners = () => {
+  stuckTurnCount.value = countStuckTurns()
+  
+  // Show hint banner after 2 stuck turns
+  showHintBanner.value = stuckTurnCount.value >= 2 && stuckTurnCount.value < 5
+  
+  // Show remediation banner after 5+ stuck turns or explicit remediation message
+  const hasRemediationMessage = messages.value.some((msg: typeof messages.value[0]) => 
+    msg.role === 'assistant' && isRemediationMessage(msg)
+  )
+  showRemediationBanner.value = stuckTurnCount.value >= 5 || hasRemediationMessage
+}
+
 // Reset conversation
 const resetConversation = async () => {
   if (isProcessing.value) return
@@ -966,6 +1115,9 @@ const resetConversation = async () => {
   messages.value = []
   files.value = null
   textProblem.value = ''
+  stuckTurnCount.value = 0
+  showHintBanner.value = false
+  showRemediationBanner.value = false
   
   // Unsubscribe from old session if exists
   if (unsubscribeChat) {
@@ -998,23 +1150,122 @@ const resetConversation = async () => {
   })
 }
 
+// Preload KG data on button hover (hover intent)
+let kgHoverTimeout: ReturnType<typeof setTimeout> | null = null
+const handleKGButtonHover = () => {
+  if (process.client && sessionId.value) {
+    // Clear any existing timeout
+    if (kgHoverTimeout) {
+      clearTimeout(kgHoverTimeout)
+    }
+    
+    // Preload after a short delay (hover intent)
+    kgHoverTimeout = setTimeout(() => {
+      const kgViz = useKGVisualization()
+      // Only preload if not already cached and not loading
+      if (!kgViz.isLoading.value && !kgViz.isCached(undefined, sessionId.value)) {
+        console.log('🔄 Preloading KG data on button hover...')
+        kgViz.preloadKGData(undefined, sessionId.value).catch(err => {
+          console.warn('Failed to preload KG data on hover:', err)
+        })
+      }
+    }, 300) // 300ms hover delay
+  }
+}
+
 // Handle opening KG sidebar
 const handleOpenKGSidebar = () => {
+  // Ensure data is preloaded before opening
+  if (process.client && sessionId.value) {
+    const kgViz = useKGVisualization()
+    // Start preload if not already loading/cached
+    kgViz.preloadKGData(undefined, sessionId.value).catch(err => {
+      console.warn('Failed to preload KG data before opening:', err)
+    })
+  }
   showKGSidebar.value = true
 }
 
+// Handle continue learning from dashboard
+const handleContinueLearning = () => {
+  // This will show the chat interface since dashboard only shows when messages.length === 0
+  // User can then type their question or problem
+  // Focus on the input if possible
+  if (process.client) {
+    const textarea = document.querySelector('textarea')
+    if (textarea) {
+      textarea.focus()
+    }
+  }
+}
+
 // Handle topic selection from KG sidebar
-const handleTopicSelect = (topicId: string) => {
+const handleTopicSelect = async (topicId: string) => {
   // Close the sidebar
   showKGSidebar.value = false
   
-  // Add a message about the selected topic
+  // Fetch topic details
+  const kg = useKnowledgeGraph()
+  const topic = await kg.getTopic(topicId)
+  
+  if (!topic) {
+    toast.add({
+      title: 'Topic Not Found',
+      description: 'Unable to load topic details.',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+    return
+  }
+  
+  // Generate learning prompt
+  const prompt = `I want to learn about ${topic.name}. Can you give me a problem to practice?`
+  
+  // Toast notification
   toast.add({
-    title: 'Topic Selected',
-    description: 'Ask me a question about this topic!',
+    title: 'Starting Learning Session',
+    description: `Let's practice ${topic.name}!`,
     color: 'success',
     icon: 'i-lucide-book-open'
   })
+  
+  // Programmatically trigger chat
+  textProblem.value = prompt
+  await processText()
+}
+
+// Fetch due review count
+const fetchDueReviews = async () => {
+  try {
+    const response = await $fetch<any>('/api/quiz/due-reviews', {
+      method: 'GET'
+    })
+    
+    if (response?.success && response?.topics?.length) {
+      dueReviewCount.value = response.topics.length
+    }
+  } catch (error) {
+    console.warn('Failed to fetch due reviews:', error)
+  }
+}
+
+// Check if student has practiced any topics
+const checkPracticedTopics = async () => {
+  try {
+    const response = await $fetch<any>('/api/mastery/domain', {
+      method: 'GET'
+    })
+    
+    if (response?.success && response?.domainProgress) {
+      // Check if any domain has been practiced
+      const practiced = Object.values(response.domainProgress).some((domain: any) => 
+        domain.totalMastered > 0 || domain.inProgress > 0
+      )
+      hasPracticedTopics.value = practiced
+    }
+  } catch (error) {
+    console.warn('Failed to check practiced topics:', error)
+  }
 }
 
 // Initialize chat on mount
@@ -1023,8 +1274,9 @@ onMounted(async () => {
     // Get or create session ID
     sessionId.value = getSessionId()
     
-    // Preload knowledge graph data in the background
+    // Preload knowledge graph data in the background immediately
     const kgViz = useKGVisualization()
+    // Start preload right away, don't wait
     kgViz.preloadKGData(undefined, sessionId.value).catch(err => {
       console.warn('Failed to preload KG data:', err)
       // Non-blocking - continue even if preload fails
@@ -1049,6 +1301,23 @@ onMounted(async () => {
         messages.value.push(newMessage)
       }
     })
+    
+    // Fetch due reviews and practiced topics for smart button visibility
+    await Promise.all([
+      fetchDueReviews(),
+      checkPracticedTopics()
+    ])
+  }
+})
+
+// Watch sessionId and preload KG data when it changes
+watch(() => sessionId.value, (newSessionId: string) => {
+  if (process.client && newSessionId) {
+    const kgViz = useKGVisualization()
+    // Preload for new session
+    kgViz.preloadKGData(undefined, newSessionId).catch(err => {
+      console.warn('Failed to preload KG data for new session:', err)
+    })
   }
 })
 
@@ -1056,6 +1325,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (unsubscribeChat) {
     unsubscribeChat()
+  }
+  // Clear hover timeout
+  if (kgHoverTimeout) {
+    clearTimeout(kgHoverTimeout)
   }
 })
 </script>

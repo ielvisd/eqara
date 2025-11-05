@@ -169,3 +169,14 @@ export async function generateDiagnosticQuestion(topic: any): Promise<any> {
   return selectedQuestion
 }
 
+// Generate quiz question (reuse diagnostic logic with adjusted difficulty)
+export async function generateQuizQuestion(topic: any, masteryLevel: number): Promise<any> {
+  // For quiz questions, we can reuse the diagnostic question generator
+  // but adjust difficulty based on mastery level
+  const baseQuestion = await generateDiagnosticQuestion(topic)
+  
+  // Could enhance this to adjust question difficulty based on mastery
+  // For now, use the same questions as diagnostic
+  return baseQuestion
+}
+

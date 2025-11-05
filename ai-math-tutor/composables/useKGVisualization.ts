@@ -18,15 +18,17 @@ export interface VueFlowData {
   edges: Edge[]
 }
 
+// Module-level singleton cache - shared across all component instances
+const vueFlowDataCache = new Map<string, VueFlowData>()
+const treeDataCache = new Map<string, TreeItem[]>()
+const isLoading = ref(false)
+
+// Cache key generator
+const cacheKey = (userId?: string, sessionId?: string) => `${userId || 'no-user'}-${sessionId || 'no-session'}`
+
 export const useKGVisualization = () => {
   const kg = useKnowledgeGraph()
   const mastery = useMastery()
-
-  // Cache for preloaded data
-  const vueFlowDataCache = ref<Map<string, VueFlowData>>(new Map())
-  const treeDataCache = ref<Map<string, TreeItem[]>>(new Map())
-  const isLoading = ref(false)
-  const cacheKey = (userId?: string, sessionId?: string) => `${userId || 'no-user'}-${sessionId || 'no-session'}`
 
   // Get mastery status based on percentage
   const getMasteryStatus = (
@@ -117,20 +119,28 @@ export const useKGVisualization = () => {
     const startTime = performance.now()
     const key = cacheKey(userId, sessionId)
     
-    // Check cache first
-    if (useCache && treeDataCache.value.has(key)) {
+    // Check cache first (synchronous check)
+    if (useCache && treeDataCache.has(key)) {
+      const cachedData = treeDataCache.get(key)!
+      const cacheDuration = performance.now() - startTime
       console.log('⚡ useKGVisualization: Using cached tree data', {
         userId,
         sessionId,
+        cacheKey: key,
+        itemsCount: cachedData.length,
+        cacheDuration: `${cacheDuration.toFixed(2)}ms`,
         timestamp: new Date().toISOString()
       })
-      return treeDataCache.value.get(key)!
+      return cachedData
     }
     
     console.log('🔄 useKGVisualization: Building topic tree...', {
       userId,
       sessionId,
+      cacheKey: key,
       useCache,
+      cacheHasKey: treeDataCache.has(key),
+      cacheSize: treeDataCache.size,
       timestamp: new Date().toISOString()
     })
     
@@ -181,13 +191,13 @@ export const useKGVisualization = () => {
     }
 
     // Cache the result
-    treeDataCache.value.set(key, treeItems)
+    treeDataCache.set(key, treeItems)
     
     const buildDuration = performance.now() - startTime
     console.log('✅ useKGVisualization: Topic tree built successfully!', {
       itemsCount: treeItems.length,
       buildDuration: `${buildDuration.toFixed(2)}ms`,
-      cached: true,
+      savedToCache: true,
       timestamp: new Date().toISOString()
     })
     
@@ -262,20 +272,29 @@ export const useKGVisualization = () => {
     const startTime = performance.now()
     const key = cacheKey(userId, sessionId)
     
-    // Check cache first
-    if (useCache && vueFlowDataCache.value.has(key)) {
+    // Check cache first (synchronous check - returns immediately)
+    if (useCache && vueFlowDataCache.has(key)) {
+      const cachedData = vueFlowDataCache.get(key)!
+      const cacheDuration = performance.now() - startTime
       console.log('⚡ useKGVisualization: Using cached Vue Flow data', {
         userId,
         sessionId,
+        cacheKey: key,
+        nodesCount: cachedData.nodes.length,
+        edgesCount: cachedData.edges.length,
+        cacheDuration: `${cacheDuration.toFixed(2)}ms`,
         timestamp: new Date().toISOString()
       })
-      return vueFlowDataCache.value.get(key)!
+      return cachedData
     }
     
     console.log('🔄 useKGVisualization: Building Vue Flow data...', {
       userId,
       sessionId,
+      cacheKey: key,
       useCache,
+      cacheHasKey: vueFlowDataCache.has(key),
+      cacheSize: vueFlowDataCache.size,
       timestamp: new Date().toISOString()
     })
     
@@ -351,14 +370,14 @@ export const useKGVisualization = () => {
     const result = { nodes, edges }
     
     // Cache the result
-    vueFlowDataCache.value.set(key, result)
+    vueFlowDataCache.set(key, result)
     
     const buildDuration = performance.now() - startTime
     console.log('✅ useKGVisualization: Vue Flow data built successfully!', {
       nodesCount: nodes.length,
       edgesCount: edges.length,
       buildDuration: `${buildDuration.toFixed(2)}ms`,
-      cached: true,
+      savedToCache: true,
       timestamp: new Date().toISOString()
     })
     
@@ -385,7 +404,7 @@ export const useKGVisualization = () => {
     const key = cacheKey(userId, sessionId)
     
     // Skip if already cached
-    if (vueFlowDataCache.value.has(key) && treeDataCache.value.has(key)) {
+    if (vueFlowDataCache.has(key) && treeDataCache.has(key)) {
       console.log('⚡ useKGVisualization: KG data already cached, skipping preload', {
         userId,
         sessionId,
@@ -428,12 +447,18 @@ export const useKGVisualization = () => {
   const clearCache = (userId?: string, sessionId?: string) => {
     if (userId || sessionId) {
       const key = cacheKey(userId, sessionId)
-      vueFlowDataCache.value.delete(key)
-      treeDataCache.value.delete(key)
+      vueFlowDataCache.delete(key)
+      treeDataCache.delete(key)
     } else {
-      vueFlowDataCache.value.clear()
-      treeDataCache.value.clear()
+      vueFlowDataCache.clear()
+      treeDataCache.clear()
     }
+  }
+
+  // Check if data is cached (synchronous check)
+  const isCached = (userId?: string, sessionId?: string): boolean => {
+    const key = cacheKey(userId, sessionId)
+    return vueFlowDataCache.has(key) && treeDataCache.has(key)
   }
 
   return {
@@ -446,6 +471,7 @@ export const useKGVisualization = () => {
     getNodeIcon,
     preloadKGData,
     clearCache,
+    isCached,
     isLoading: readonly(isLoading)
   }
 }
