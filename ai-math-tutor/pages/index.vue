@@ -64,6 +64,33 @@
                 >
                   <span class="hidden sm:inline">Knowledge Graph</span>
                 </UButton>
+
+                <!-- Auth UI -->
+                <div v-if="isAuthenticated" class="flex items-center gap-2">
+                  <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
+                    <UIcon name="i-lucide-user-check" class="size-3.5" />
+                    <span class="whitespace-nowrap">{{ userEmail }}</span>
+                  </div>
+                  <UButton
+                    icon="i-lucide-log-out"
+                    color="gray"
+                    variant="ghost"
+                    size="sm"
+                    class="text-gray-400 hover:text-red-400"
+                    @click="handleSignOut"
+                  >
+                    <span class="hidden sm:inline">Sign Out</span>
+                  </UButton>
+                </div>
+                <UButton
+                  v-else
+                  icon="i-lucide-sparkles"
+                  color="pink"
+                  size="sm"
+                  @click="showAuthModal = true"
+                >
+                  <span class="hidden sm:inline">Sign Up</span>
+                </UButton>
               </div>
             </div>
           </div>
@@ -121,6 +148,14 @@
             </div>
           </div>
         </div>
+
+        <!-- Save Progress Prompt (XP milestone or chat session threshold) -->
+        <SaveProgressPrompt
+          v-if="!isAuthenticated && (gameState.xp >= 50 || messages.length >= 3)"
+          :message="gameState.xp >= 50 ? `You've earned ${gameState.xp} XP! Sign up to save your progress.` : 'Keep your chat history! Sign up to save your learning progress.'"
+          :prompt-key="gameState.xp >= 50 ? 'xp-milestone' : 'chat-sessions'"
+          @sign-up="showAuthModal = true"
+        />
 
         <!-- Chat Messages -->
         <div v-if="messages.length > 0" class="mb-6 min-h-[400px] max-h-[600px] overflow-hidden border border-pink-500/20 rounded-lg bg-black/50">
@@ -482,6 +517,12 @@
     <UModal v-model="showQuizInterface" :ui="{ width: 'max-w-5xl' }">
       <QuizInterface @close="showQuizInterface = false" />
     </UModal>
+
+    <!-- Auth Modal -->
+    <AuthModal
+      v-model="showAuthModal"
+      :has-anonymous-data="hasAnonymousData"
+    />
   </div>
 </template>
 
@@ -519,7 +560,15 @@ const sessionId = ref<string>('')
 const showKGSidebar = ref(false)
 const showQuizInterface = ref(false)
 const showReviewSession = ref(false)
+const showAuthModal = ref(false)
 let unsubscribeChat: (() => void) | null = null
+
+// Auth state
+const { user, isAuthenticated, signOut } = useAuth()
+const userEmail = computed(() => user.value?.email || '')
+const hasAnonymousData = computed(() => {
+  return messages.value.length > 0 || gameState.value.xp > 0
+})
 
 // Smart button visibility
 const dueReviewCount = ref(0)
@@ -976,6 +1025,7 @@ const processText = async () => {
         message: userInput,
         chatHistory: chatHistory,
         sessionId: sessionId.value,
+        userId: user.value?.id || undefined,
         extractedProblem: extractedProblem
       }
     })
@@ -1196,6 +1246,35 @@ const handleContinueLearning = () => {
     if (textarea) {
       textarea.focus()
     }
+  }
+}
+
+// Handle sign out
+const handleSignOut = async () => {
+  try {
+    await signOut()
+    
+    toast.add({
+      title: 'Signed out successfully',
+      description: 'You can continue using Eqara anonymously',
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+    
+    // Generate new session ID for anonymous use
+    if (process.client) {
+      localStorage.removeItem('chat_session_id')
+      sessionId.value = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      localStorage.setItem('chat_session_id', sessionId.value)
+    }
+  } catch (error: any) {
+    console.error('Sign out failed:', error)
+    toast.add({
+      title: 'Sign out failed',
+      description: error.message || 'Please try again',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
   }
 }
 

@@ -95,6 +95,12 @@
         </template>
 
         <div class="space-y-6">
+          <!-- Save Progress Prompt -->
+          <SaveProgressPrompt
+            message="Don't lose your diagnostic results! Sign up to save your personalized learning path."
+            prompt-key="post-diagnostic"
+            @sign-up="showAuthModal = true"
+          />
           <!-- Placement Summary -->
           <div class="bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-lg p-6 border border-pink-500/20">
             <h4 class="text-lg font-semibold text-white mb-4">Your Knowledge Frontier</h4>
@@ -165,6 +171,12 @@
         </div>
       </UCard>
     </UContainer>
+
+    <!-- Auth Modal -->
+    <AuthModal
+      v-model="showAuthModal"
+      :has-anonymous-data="true"
+    />
   </div>
 </template>
 
@@ -184,6 +196,7 @@ const currentQuestion = ref<DiagnosticQuestion | null>(null)
 const currentTopic = ref<any>(null)
 const selectedAnswer = ref<string>('')
 const questionNumber = ref(1)
+const showAuthModal = ref(false)
 const answers = ref<DiagnosticAnswer[]>([])
 const isComplete = ref(false)
 const placement = ref<any>(null)

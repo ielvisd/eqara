@@ -375,12 +375,22 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const body = await readBody(event)
   
-  const { message, chatHistory, sessionId, extractedProblem } = body
+  const { message, chatHistory, sessionId, userId, extractedProblem } = body
+
+  // Prefer userId if authenticated, otherwise use sessionId
+  const userIdentifier = userId || sessionId
 
   if (!message && !extractedProblem) {
     throw createError({
       statusCode: 400,
       statusMessage: 'No message or problem provided'
+    })
+  }
+  
+  if (!userIdentifier) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Either userId or sessionId is required'
     })
   }
 
