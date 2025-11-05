@@ -11,18 +11,18 @@ This PRD is now locked and ready for LLM-driven implementation (e.g., feed direc
 ## 1. Overview
 
 ### 1.1 Product Vision
-A pedagogically-grounded AI math tutor that empowers students through evidence-based learning strategies, optimized for CCAT-style math preparation while maintaining scalability for broader curriculum. Built on Math Academy's mastery learning framework, the system uses a Knowledge Graph structure to deliver individualized instruction at each student's knowledge frontier. Through Socratic questioning, micro-scaffolding (Knowledge Points), spaced repetition (FIRe algorithm), and retrieval practice, students achieve 4x learning acceleration compared to traditional classrooms. The system combines rigorous pedagogy with light videogame-like engagement—where 1 XP ≈ 1 minute of focused work—making mastery learning addictive and fun. Inspired by the Khan Academy/OpenAI "Khanmigo" demo's empathetic approach, enhanced with Math Academy's science-backed learning acceleration.
+A pedagogically-grounded AI math tutor that empowers students through evidence-based learning strategies, optimized for CCAT-style math preparation while maintaining scalability for broader curriculum. Built on research-backed mastery learning principles, the system uses a Knowledge Graph structure to deliver individualized instruction at each student's knowledge frontier. Through Socratic questioning, micro-scaffolding (Knowledge Points), spaced repetition (FIRe algorithm), and retrieval practice, students achieve 4x learning acceleration compared to traditional classrooms. The system combines rigorous pedagogy with light videogame-like engagement—where 1 XP ≈ 1 minute of focused work—making mastery learning addictive and fun. Inspired by the Khan Academy/OpenAI "Khanmigo" demo's empathetic approach, enhanced with evidence-based learning acceleration.
 
 ### 1.2 Objectives
 **Primary:** Deliver mastery-based, individualized math tutoring optimized for CCAT preparation (arithmetic, algebra, proportions, word problems) via a Knowledge Graph-driven adaptive system that ensures students work only at their knowledge frontier, achieving 100% mastery before advancing.
 
-**Secondary:** Implement Math Academy's full pedagogical toolkit (Knowledge Graph, mastery tracking, spaced repetition, micro-scaffolding, retrieval practice) while maintaining rapid development with Nuxt + Supabase, emphasizing evidence-based learning acceleration and engaging game-like interactions.
+**Secondary:** Implement the full evidence-based pedagogical toolkit (Knowledge Graph, mastery tracking, spaced repetition, micro-scaffolding, retrieval practice) while maintaining rapid development with Nuxt + Supabase, emphasizing research-backed learning acceleration and engaging game-like interactions.
 
-**Pedagogical Foundation:** Based on Math Academy's "The Math Academy Way" philosophy—achieving Bloom's Two-Sigma Solution through scalable technology, delivering fully individualized, mastery-driven instruction that accelerates learning 4x faster than traditional methods.
+**Pedagogical Foundation:** Based on cognitive science and research-backed principles—achieving Bloom's Two-Sigma Solution through scalable technology, delivering fully individualized, mastery-driven instruction that accelerates learning 4x faster than traditional methods.
 
 **Inspiration References:** 
 - Khanmigo demo (YouTube: https://www.youtube.com/watch?v=IvXZCocyU_M) – Empathetic, question-led interactions
-- Math Academy pedagogy – Mastery learning, Knowledge Graph, spaced repetition, retrieval practice
+- Cognitive science research – Mastery learning, Knowledge Graph, spaced repetition, retrieval practice
 
 ### 1.3 Success Criteria
 **Pedagogical:** 
@@ -183,8 +183,8 @@ A pedagogically-grounded AI math tutor that empowers students through evidence-b
 - **Timed Checks:** Frequent timed quizzes with remedial follow-up to check for and enforce automaticity on foundational facts and procedures.
 - **Fluency Building:** Timed testing only after proficiency to build fluency without increasing math anxiety.
 
-**Gamification Layer (Math Academy Calibrated):**
-- **XP System:** 1 XP ≈ 1 minute of fully-focused, productive work (calibrated to Math Academy standard).
+**Gamification Layer (Research-Calibrated):**
+- **XP System:** 1 XP ≈ 1 minute of fully-focused, productive work (calibrated to research-backed standards).
 - **XP Rewards:** 10-50 XP per step/topic; bonus XP for perfect work; penalties for poor effort/rushing.
 - **Quality Incentives:** XP incentivizes both quantity (pace/leaderboards) and quality (bonus for mastery, penalties for guessing).
 - **Badges:** 3-5 achievement badges (e.g., "Equation Explorer", "Mastery Champion", "Knowledge Frontier Explorer").
@@ -282,7 +282,7 @@ All problem types integrated with Knowledge Graph structure for prerequisite-awa
 
 ### 5.5 Prompt Engineering Notes
 - **Grok-optimized samples:** Maintain playful, engaging tone while integrating pedagogical rigor
-- **MCP rule:** Reference Math Academy pedagogy docs for mastery learning principles
+- **MCP rule:** Reference cognitive science research for mastery learning principles
 - **CCAT Focus:** Emphasize arithmetic, algebra, proportions, word problems in examples
 
 ## 6. Deliverables

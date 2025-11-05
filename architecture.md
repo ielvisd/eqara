@@ -166,8 +166,8 @@ graph TB
 - **Knowledge Graph**: Prerequisite/encompassing relationships drive instruction
 - **Knowledge Frontier**: Only serve lessons at student's frontier (boundary of knowledge)
 - **Socratic Focus**: Never direct answers - guide through questions with KG awareness
-- **Evidence-Based**: Math Academy pedagogy (spaced repetition, retrieval practice, micro-scaffolding)
-- **Gamification Calibrated**: 1 XP ≈ 1 minute of focused work (Math Academy standard)
+- **Evidence-Based**: Research-backed pedagogy (spaced repetition, retrieval practice, micro-scaffolding)
+- **Gamification Calibrated**: 1 XP ≈ 1 minute of focused work (research-backed standard)
 - **MCP-Driven**: All components reference official docs for accuracy
 - **Mobile-First**: Responsive design for all devices
 - **Optional Auth**: Anonymous sessions with optional persistence for mastery tracking

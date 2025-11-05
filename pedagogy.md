@@ -1,4 +1,4 @@
-This document, "The Math Academy Way – Working Draft," outlines Math Academy's philosophy and technical approach to mathematical talent development, rooted in modern cognitive science and optimized through technology.
+This document outlines evidence-based pedagogical principles for mathematical talent development, rooted in modern cognitive science and optimized through technology.
 
 ## I. Core Philosophy and The Problem to Solve
 
@@ -7,17 +7,17 @@ This document, "The Math Academy Way – Working Draft," outlines Math Academy's
 *   **Bloom's Two-Sigma Problem:** Educational psychologist Benjamin Bloom found that one-on-one tutoring produced learning outcomes two standard deviations (two-sigma) above traditional classroom teaching, meaning the average tutored student outperformed 98% of traditionally taught students. The challenge is to achieve this effect in a scalable, cost-effective way.
 *   **Talent Development vs. Traditional Schooling:**
     *   **Traditional Schooling:** Groups students by age, progresses in lockstep, and expects differing levels of achievement.
-    *   **Talent Development (The Math Academy Way):** Is **individualized**, requires **mastery** of prerequisites before advancing, and measures progress by the most advanced skills a student can execute to a sufficient threshold.
-*   **Cost of Talent Development:** Fully individualized, expert human coaching is prohibitively expensive (estimated at **~$13,000 per year**), which Math Academy aims to reduce to **$499 per year** (26x cheaper) via technology.
-*   **Bloom's 3-Stage Process:** Math Academy focuses on the **Middle Developmental Years**, characterized by **intense and strenuous skill refinement** and mastery learning, as opposed to the early years (playtime) or later years (creative production/research).
+    *   **Talent Development (Evidence-Based Approach):** Is **individualized**, requires **mastery** of prerequisites before advancing, and measures progress by the most advanced skills a student can execute to a sufficient threshold.
+*   **Cost of Talent Development:** Fully individualized, expert human coaching is prohibitively expensive (estimated at **~$13,000 per year**), which technology-enabled platforms can reduce significantly through scale.
+*   **Bloom's 3-Stage Process:** Effective learning focuses on the **Middle Developmental Years**, characterized by **intense and strenuous skill refinement** and mastery learning, as opposed to the early years (playtime) or later years (creative production/research).
 *   **Misinterpreted Taxonomy:** Effective learning requires **front-loading foundational skill development** (lower parts of Bloom's Taxonomy) before shifting focus to higher-level creative production. Research shows the best way to improve problem-solving is to acquire a large store of domain-specific foundational skills quickly.
 
 ### Chapter 2. The Science of Learning
 
-*   **Evidence-Based Strategies (The Math Academy Toolkit):** The system leverages numerous, extensively researched strategies often absent in traditional schooling: **Active Learning, Deliberate Practice, Mastery Learning, Minimizing Cognitive Load, Developing Automaticity, Layering, Non-Interference, Spaced Repetition (Distributed Practice), the Testing Effect (Retrieval Practice), Targeted Remediation,** and **Gamification**.
+*   **Evidence-Based Strategies (The Learning Toolkit):** The system leverages numerous, extensively researched strategies often absent in traditional schooling: **Active Learning, Deliberate Practice, Mastery Learning, Minimizing Cognitive Load, Developing Automaticity, Layering, Non-Interference, Spaced Repetition (Distributed Practice), the Testing Effect (Retrieval Practice), Targeted Remediation,** and **Gamification**.
 *   **The Persistence of Tradition:** These effective strategies are largely ignored because they **increase student effort/cognitive activation**, which students (and often teachers) mistakenly interpret as a sign of *less* learning, thus preferring more comfortable, less effective traditional methods.
 *   **Desirable Difficulty vs. Illusion of Comprehension:** Effective practice introduces **desirable difficulties** (e.g., spacing, interleaving) that make the task harder but significantly improve long-term recall and transfer. Avoiding these difficulties leads to an **illusion of comprehension** (a false sense of mastery).
-*   **Learning Acceleration:** By systematically applying these compounded strategies, Math Academy accelerates student learning by **4x** compared to traditional classrooms (e.g., AP Calculus BC takes $\sim$6,000 XP/minutes vs. $\sim$24,000 minutes in a typical course).
+*   **Learning Acceleration:** By systematically applying these compounded strategies, research shows student learning can accelerate by **4x** compared to traditional classrooms (e.g., AP Calculus BC can be learned in $\sim$6,000 focused minutes vs. $\sim$24,000 minutes in a typical course).
 
 ### Chapter 3. Core Science: How the Brain Works
 
@@ -47,13 +47,13 @@ This document, "The Math Academy Way – Working Draft," outlines Math Academy's
 ### Chapter 9. Myths & Realities about Mathematical Acceleration
 
 *   **Developmental Appropriateness:** Academic acceleration **does not** lead to adverse psychological consequences for capable students. The appropriate time for advanced study is **solely dependent on prerequisite mastery**.
-*   **Depth of Learning:** Accelerated students learn **as much material, just as deeply** (e.g., two years of material in one year) over a proportionally shorter time frame as non-accelerated peers. Math Academy ensures deep learning by covering a superset of major textbook content and enforcing 100% mastery.
+*   **Depth of Learning:** Accelerated students learn **as much material, just as deeply** (e.g., two years of material in one year) over a proportionally shorter time frame as non-accelerated peers. Mastery-based systems ensure deep learning by covering comprehensive content and enforcing 100% mastery before advancement.
 *   **Running Out of Courses:** Calculus is **not** the "end of the road." There are more university-level math courses (Linear Algebra, Multivariable Calculus, Differential Equations, etc.) *above* Calculus BC than high school courses *below* it. Acceleration opens career doors and leads to higher lifetime professional accomplishment (especially in STEM).
 *   **Higher-Grade Math > Grade-Level Competition Problems:** For most students who apply math in other fields, **learning more advanced subjects** (e.g., Linear Algebra) is more productive than focusing on niche, complex competition problems.
 
 ---
 
-## III. Math Academy's Cognitive Learning Strategies (The Technology)
+## III. Cognitive Learning Strategies (The Technology)
 
 ### Chapter 4. Core Technology: the Knowledge Graph (Recap and Deep Dive)
 
@@ -62,7 +62,7 @@ This document, "The Math Academy Way – Working Draft," outlines Math Academy's
 
 ### Chapter 13. Mastery Learning
 
-*   **True Mastery:** Math Academy implements true mastery learning at a **fully granular level** (topic by topic) by leveraging the KG. This is only attainable at scale through an adaptive system that emulates 1-on-1 tutoring.
+*   **True Mastery:** Effective systems implement true mastery learning at a **fully granular level** (topic by topic) by leveraging the KG. This is only attainable at scale through an adaptive system that emulates 1-on-1 tutoring.
 
 ### Chapter 14. Minimizing Cognitive Load
 
@@ -72,7 +72,7 @@ This document, "The Math Academy Way – Working Draft," outlines Math Academy's
 
 ### Chapter 15. Developing Automaticity
 
-*   **Automation of Skills:** Automaticity frees WM for higher-level thought. Math Academy requires sufficient practice on skills to reach a **baseline mastery** threshold before layering on a new topic, and uses **frequent timed quizzes** with remedial follow-up to check for and enforce automaticity on foundational facts and procedures.
+*   **Automation of Skills:** Automaticity frees WM for higher-level thought. Effective systems require sufficient practice on skills to reach a **baseline mastery** threshold before layering on a new topic, and use **frequent timed quizzes** with remedial follow-up to check for and enforce automaticity on foundational facts and procedures.
 
 ### Chapter 16. Layering and Chapter 17. Non-Interference
 
@@ -81,13 +81,13 @@ This document, "The Math Academy Way – Working Draft," outlines Math Academy's
 
 ### Chapter 18. Spaced Repetition (Distributed Practice)
 
-*   **Fractional Implicit Repetition (FIRe):** Math Academy’s proprietary algorithm that generalizes spaced repetition to hierarchical math.
+*   **Fractional Implicit Repetition (FIRe):** An advanced algorithm that generalizes spaced repetition to hierarchical mathematics.
     *   **Implicit Repetition/Encompassing:** Repetitions on **advanced topics** automatically "trickle down" (**implicit repetition**) to update the review schedules of **simpler topics** they encompass. This dramatically reduces the number of explicit reviews needed (**repetition compression**).
     *   **Calibration:** The system calibrates the spacing of reviews to each individual student on each individual topic based on **student-topic learning speeds** (a ratio of student ability to topic difficulty). Reviews are intentionally served when memory is slightly "fuzzy" to maximize consolidation.
 
 ### Chapter 20. The Testing Effect (Retrieval Practice)
 
-*   **Continuous Assessment:** The best way to review is to **test yourself** (retrieval practice). Math Academy uses quick, frequent, interleaved quizzes to promote retrieval and build long-term retention.
+*   **Continuous Assessment:** The best way to review is to **test yourself** (retrieval practice). Effective systems use quick, frequent, interleaved quizzes to promote retrieval and build long-term retention.
 *   **Testing and Anxiety:** Quizzes are **low-stakes** and frequent, structured to promote a growth mindset. **Timed testing** is only introduced *after* a student has achieved proficiency to build fluency and reduce long-term math anxiety.
 
 ### Chapter 21. Targeted Remediation
@@ -97,7 +97,7 @@ This document, "The Math Academy Way – Working Draft," outlines Math Academy's
 
 ### Chapter 22. Gamification
 
-*   **eXperience Points (XP):** XP is the currency of the gamified system, calibrated so **1 XP $\approx$ 1 minute** of fully-focused, productive work. XP incentivizes both **quantity** (pace/leaderboards) and **quality** (bonus XP for perfect work, penalties for poor effort).
+*   **eXperience Points (XP):** XP is the currency of gamified learning systems, calibrated so **1 XP $\approx$ 1 minute** of fully-focused, productive work. XP incentivizes both **quantity** (pace/leaderboards) and **quality** (bonus XP for perfect work, penalties for poor effort).
 *   **Closing Loopholes:** XP penalties for rushing/guessing prevent "XP hackers" (adversarial students attempting to game the system) and force engagement with deliberate practice.
 
 ---

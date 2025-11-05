@@ -2,7 +2,7 @@
 
 *Transforming math learning through Socratic AI tutoring and mastery-based progression*
 
-Eqara is a comprehensive AI-powered math tutoring platform that combines Math Academy's proven pedagogical approach with modern AI technology. Built on principles of mastery learning, spaced repetition, and individualized instruction, Eqara accelerates learning 4x faster than traditional methods.
+Eqara is a comprehensive AI-powered math tutoring platform that combines evidence-based pedagogical approaches with modern AI technology. Built on principles of mastery learning, spaced repetition, and individualized instruction, Eqara accelerates learning 4x faster than traditional methods.
 
 ## ✨ Key Features
 
@@ -249,7 +249,7 @@ See [`SETUP-DATABASE.md`](./SETUP-DATABASE.md) for full schema.
 
 ### Pedagogical Foundation
 
-Eqara implements Math Academy's "The Math Academy Way" principles:
+Eqara implements evidence-based learning principles:
 
 1. **Knowledge Graph Structure**: Topics organized by prerequisite relationships
 2. **Mastery Learning**: 100% mastery before advancement (Bloom's 2-Sigma Solution)
@@ -332,8 +332,8 @@ MIT License - see LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
-- **Math Academy**: Pedagogical framework and FIRe algorithm inspiration
-- **Khan Academy/Khanmigo**: Socratic tutoring approach
+- **Cognitive Science Research**: Bloom's 2-Sigma, spaced repetition, retrieval practice
+- **Khan Academy/Khanmigo**: Socratic tutoring approach inspiration
 - **Nuxt Team**: Excellent framework and Nuxt UI components
 - **Supabase**: Comprehensive backend platform
 - **Vue Flow**: Beautiful graph visualization
