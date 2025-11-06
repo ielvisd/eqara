@@ -117,17 +117,36 @@ export function validateMath(message: string, previousContext?: string[], conver
     let originalEqStr = ''
     
     // First, check conversation history if available
+    // Look for the FIRST user message with an equation (original problem)
     if (conversationHistory && conversationHistory.length > 0) {
-      // Look backwards through conversation for the original equation
-      for (let i = conversationHistory.length - 1; i >= 0; i--) {
+      // Look through conversation for the original equation (start from beginning for original problem)
+      for (let i = 0; i < conversationHistory.length; i++) {
         const msg = conversationHistory[i]
         const content = msg.content || ''
         
-        // Try to parse as equation
-        originalEquation = parseEquation(content)
-        if (originalEquation && originalEquation.isValid) {
-          originalEqStr = content
-          break
+        // Prioritize user messages for the original problem
+        if (msg.role === 'user') {
+          // Try to parse as equation
+          originalEquation = parseEquation(content)
+          if (originalEquation && originalEquation.isValid) {
+            originalEqStr = content
+            break
+          }
+        }
+      }
+      
+      // If no user message had an equation, check all messages (including AI)
+      if (!originalEquation) {
+        for (let i = conversationHistory.length - 1; i >= 0; i--) {
+          const msg = conversationHistory[i]
+          const content = msg.content || ''
+          
+          // Try to parse as equation
+          originalEquation = parseEquation(content)
+          if (originalEquation && originalEquation.isValid) {
+            originalEqStr = content
+            break
+          }
         }
       }
     }
@@ -148,25 +167,42 @@ export function validateMath(message: string, previousContext?: string[], conver
           ? conversationHistory.slice().reverse().find((m: any) => m.role === 'assistant')?.content || ''
           : contextStr
         
-        const mentionsAdd = aiMessage.toLowerCase().includes('add') || message.toLowerCase().includes('add')
-        const mentionsSubtract = aiMessage.toLowerCase().includes('subtract') || message.toLowerCase().includes('subtract')
+        // Check for addition: "add", "+", "plus"
+        const mentionsAdd = aiMessage.toLowerCase().includes('add') || 
+                          message.toLowerCase().includes('add') ||
+                          message.toLowerCase().match(/\+\s*\d+\s+from\s+both\s+sides/i) ||
+                          message.toLowerCase().match(/add\s+\d+/i)
+        
+        // Check for subtraction: "subtract", "-", "minus", or patterns like "-3 from both sides"
+        const mentionsSubtract = aiMessage.toLowerCase().includes('subtract') || 
+                                message.toLowerCase().includes('subtract') ||
+                                message.match(/-\s*\d+\s+from\s+both\s+sides/i) || // "-3 from both sides"
+                                message.match(/^-\s*\d+/i) || // "-3" at start
+                                message.toLowerCase().match(/subtract\s+\d+/i) ||
+                                message.toLowerCase().match(/minus\s+\d+/i)
         
         // Calculate correct result based on operation using mathjs
         let correctValue: number | null = null
         let operationStr = ''
         
+        // Priority: If student explicitly mentions an operation, use that
+        // Otherwise, infer from context
         if (originalEquation.constantOp === '+' && mentionsSubtract) {
-          // Original: 4x+2=10, student subtracted: should be 10-2=8
+          // Original: 2x+3=11, student subtracted: should be 11-3=8
           operationStr = `${originalEquation.rightSide} - ${originalEquation.constant}`
           correctValue = evaluateExpression(operationStr)
-        } else if (originalEquation.constantOp === '-' && (mentionsAdd || !mentionsSubtract)) {
-          // Original: 5x-3=2, if AI mentioned adding OR no subtract mentioned, validate addition
-          // This catches: "5x-3=2" -> add 3 -> should be "5x=5" (2+3=5, not 6!)
+        } else if (originalEquation.constantOp === '+' && !mentionsAdd) {
+          // Original: 2x+3=11, if no add mentioned, assume subtraction (most common operation)
+          // This handles cases like "-3 from both sides" where subtraction is implied
+          operationStr = `${originalEquation.rightSide} - ${originalEquation.constant}`
+          correctValue = evaluateExpression(operationStr)
+        } else if (originalEquation.constantOp === '-' && mentionsAdd) {
+          // Original: 5x-3=2, student added: should be 2+3=5
           operationStr = `${originalEquation.rightSide} + ${originalEquation.constant}`
           correctValue = evaluateExpression(operationStr)
-        } else if (originalEquation.constantOp === '+' && (mentionsSubtract || !mentionsAdd)) {
-          // Original: 4x+2=10, if AI mentioned subtracting OR no add mentioned, validate subtraction
-          operationStr = `${originalEquation.rightSide} - ${originalEquation.constant}`
+        } else if (originalEquation.constantOp === '-' && !mentionsSubtract) {
+          // Original: 5x-3=2, if no subtract mentioned, assume addition
+          operationStr = `${originalEquation.rightSide} + ${originalEquation.constant}`
           correctValue = evaluateExpression(operationStr)
         }
         

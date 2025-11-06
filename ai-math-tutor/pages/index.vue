@@ -664,7 +664,7 @@
                       <div v-if="index > 0" 
                         :class="[
                           'rounded-lg p-4 border-2 transition-all',
-                          index === allSteps.length - 1
+                          isFinalSolution(step.equation) && index === allSteps.length - 1
                             ? 'bg-green-500/10 border-green-500/40 shadow-lg shadow-green-500/10'
                             : step.isCorrect
                               ? 'bg-green-500/10 border-green-500/30'
@@ -678,10 +678,13 @@
                             v-html="renderMath(step.equation, true)"
                           ></div>
                           <UIcon 
-                            v-if="step.isCorrect && index === allSteps.length - 1" 
+                            v-if="step.isCorrect && isFinalSolution(step.equation) && index === allSteps.length - 1" 
                             name="i-lucide-check-circle" 
                             class="size-5 text-green-400 flex-shrink-0"
                           />
+                        </div>
+                        <div v-if="step.equation.match(/^\d+x/i) && step.isCorrect" class="text-xs text-gray-400 text-center mt-2">
+                          Intermediate Step
                         </div>
                       </div>
                     </template>
@@ -1145,6 +1148,13 @@ const currentProblemStart = computed(() => {
 const allSteps = computed(() => {
   return extractAllSteps(messages.value, currentProblemStart.value)
 })
+
+// Check if an equation is a final solution (x = number) vs intermediate (2x = number)
+const isFinalSolution = (equation: string): boolean => {
+  // Final solution has no coefficient before x (just "x = number")
+  // Intermediate steps have coefficients (like "2x = 8")
+  return equation.match(/^[^0-9]*x\s*=\s*\d+$/i) !== null && equation.match(/^\d+x/i) === null
+}
 
 // Extract final solution (x = value)
 const finalSolution = computed(() => {

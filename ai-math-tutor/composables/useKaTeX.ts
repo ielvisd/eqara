@@ -422,31 +422,69 @@ export const useKaTeX = () => {
         }
       }
       
-      // Check for operation mentions - ONLY from user messages
-      // AI messages might reference operations in questions, which would overwrite the correct operation
-      if (msg.role === 'user' && !isArithmetic) {
-        // User patterns: "subtract 2 from each side", "divide both sides by 2", "divide by 2", etc.
-        const userSubtractMatch = msg.content.match(/(?:subtract|subtracting)\s+(\d+)\s+from\s+(?:each|both)\s+side/i)
-        const userAddMatch = msg.content.match(/(?:add|adding)\s+(\d+)\s+to\s+(?:each|both)\s+side/i)
-        // Try full pattern first, then simpler pattern
-        const userDivideMatchFull = msg.content.match(/(?:divide|dividing)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
-        const userDivideMatchSimple = msg.content.match(/(?:divide|dividing)\s+by\s+(\d+)/i) ||
-                                     msg.content.match(/(?:divide|dividing)\s+(\d+)/i) // "divide 2" or "dividing 2"
-        const userDivideMatch = userDivideMatchFull || userDivideMatchSimple
-        const userMultiplyMatch = msg.content.match(/(?:multiply|multiplying)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+      // Check for operation mentions - from user messages AND AI descriptions of drawings
+      if (!isArithmetic) {
+        // Check user messages for explicit operation descriptions
+        if (msg.role === 'user') {
+          // User patterns: "subtract 2 from each side", "divide both sides by 2", "divide by 2", etc.
+          const userSubtractMatch = msg.content.match(/(?:subtract|subtracting)\s+(\d+)\s+from\s+(?:each|both)\s+side/i) ||
+                                    msg.content.match(/^-\s*(\d+)\s+from\s+both\s+sides/i) // "-3 from both sides"
+          const userAddMatch = msg.content.match(/(?:add|adding)\s+(\d+)\s+to\s+(?:each|both)\s+side/i)
+          // Try full pattern first, then simpler pattern
+          const userDivideMatchFull = msg.content.match(/(?:divide|dividing)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+          const userDivideMatchSimple = msg.content.match(/(?:divide|dividing)\s+by\s+(\d+)/i) ||
+                                       msg.content.match(/(?:divide|dividing)\s+(\d+)/i) // "divide 2" or "dividing 2"
+          const userDivideMatch = userDivideMatchFull || userDivideMatchSimple
+          const userMultiplyMatch = msg.content.match(/(?:multiply|multiplying)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+          
+          if (userAddMatch) {
+            const value = userAddMatch[1]
+            lastOperation = `+ ${value} to both sides`
+          } else if (userSubtractMatch) {
+            const value = userSubtractMatch[1]
+            lastOperation = `- ${value} from both sides`
+          } else if (userMultiplyMatch) {
+            const value = userMultiplyMatch[1]
+            lastOperation = `× ${value} to both sides`
+          } else if (userDivideMatch) {
+            const value = userDivideMatch[1]
+            lastOperation = `÷ ${value} from both sides`
+          }
+        }
         
-        if (userAddMatch) {
-          const value = userAddMatch[1]
-          lastOperation = `+ ${value} to both sides`
-        } else if (userSubtractMatch) {
-          const value = userSubtractMatch[1]
-          lastOperation = `- ${value} from both sides`
-        } else if (userMultiplyMatch) {
-          const value = userMultiplyMatch[1]
-          lastOperation = `× ${value} to both sides`
-        } else if (userDivideMatch) {
-          const value = userDivideMatch[1]
-          lastOperation = `÷ ${value} from both sides`
+        // Check AI messages for operations described in drawing analysis
+        // Pattern: "showed the next step as 2x/2 = 8/2" or "divided both sides by 2"
+        if (msg.role === 'assistant') {
+          // Look for division operations in AI descriptions of drawings
+          const aiDivideMatch = msg.content.match(/(?:divide|dividing|divided)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i) ||
+                               msg.content.match(/(?:showed|showing|wrote|written).*?(?:divide|dividing|divided).*?by\s+(\d+)/i)
+          
+          // Look for division in intermediate step format: "2x/2 = 8/2" or "2x ÷ 2 = 8 ÷ 2"
+          const intermediateDivideMatch = msg.content.match(/(\d+x)\s*[\/÷]\s*(\d+)\s*=\s*(\d+)\s*[\/÷]\s*(\d+)/i)
+          
+          if (aiDivideMatch && aiDivideMatch[1]) {
+            const value = aiDivideMatch[1]
+            lastOperation = `÷ ${value} from both sides`
+          } else if (intermediateDivideMatch) {
+            // Extract the divisor (should be the same on both sides)
+            const divisor = intermediateDivideMatch[2] || intermediateDivideMatch[4]
+            if (divisor) {
+              lastOperation = `÷ ${divisor} from both sides`
+            }
+          }
+          
+          // Also check for other operations in AI descriptions
+          const aiSubtractMatch = msg.content.match(/(?:subtract|subtracting|subtracted)\s+(\d+)\s+from\s+(?:both\s+sides?|each\s+side)/i)
+          const aiAddMatch = msg.content.match(/(?:add|adding|added)\s+(\d+)\s+to\s+(?:both\s+sides?|each\s+side)/i)
+          const aiMultiplyMatch = msg.content.match(/(?:multiply|multiplying|multiplied)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+          
+          if (aiAddMatch && aiAddMatch[1] && !lastOperation) {
+            lastOperation = `+ ${aiAddMatch[1]} to both sides`
+          } else if (aiSubtractMatch && aiSubtractMatch[1] && !lastOperation) {
+            lastOperation = `- ${aiSubtractMatch[1]} from both sides`
+          } else if (aiMultiplyMatch && aiMultiplyMatch[1] && !lastOperation) {
+            lastOperation = `× ${aiMultiplyMatch[1]} to both sides`
+          }
         }
       }
       
@@ -527,10 +565,13 @@ export const useKaTeX = () => {
         
         // Priority 2: AI explicitly confirming an equation with various phrasings
         // Patterns: "so now we have 2x=2", "the equation should be 2x=2", "now we have 2x=2", etc.
-        // Also handles final solutions like "x=1"
+        // Also handles final solutions like "x=1" or "x=4"
+        // Also handles "You ended up with x=4" or "you found x=4"
         const confirmPatterns = [
-          /(?:so|now|we have|you have|the equation is|should be|equals?|becomes?|is|got)\s+(?:the\s+)?(?:equation\s+)?([\d]*x\s*=\s*\d+)/i,
-          /([\d]*x\s*=\s*\d+)\s*(?:is\s+correct|\.|!|$)/i  // Direct equation at end of sentence
+          /(?:so|now|we have|you have|the equation is|should be|equals?|becomes?|is|got|ended up with|found|got to|arrived at)\s+(?:the\s+)?(?:equation\s+)?([\d]*x\s*=\s*\d+)/i,
+          /([\d]*x\s*=\s*\d+)\s*(?:is\s+correct|\.|!|$)/i,  // Direct equation at end of sentence
+          /(?:you\s+)?(?:ended up with|found|got|arrived at)\s+([\d]*x\s*=\s*\d+)/i,  // "You ended up with x=4"
+          /(?:now that you have|you have)\s+([\d]*x\s*=\s*\d+)/i  // "Now that you have 2x=8"
         ]
         
         for (const pattern of confirmPatterns) {
@@ -565,6 +606,7 @@ export const useKaTeX = () => {
             
             // Only confirm if there are NO rejection words AND explicit positive confirmation
             // Require strong confirmation words to avoid false positives
+            // But also accept if AI acknowledges the equation (like "now that you have 2x=8")
             const hasStrongConfirmation = msgContentLower.includes('yes') ||
                                         msgContentLower.includes('correct') ||
                                         msgContentLower.includes('exactly') ||
@@ -576,6 +618,12 @@ export const useKaTeX = () => {
                                         msgContentLower.includes('that\'s right') ||
                                         msgContentLower.includes('you got it') ||
                                         msgContentLower.includes('yes, that\'s it') ||
+                                        msgContentLower.includes('nice') ||
+                                        msgContentLower.includes('good') ||
+                                        msgContentLower.includes('great') ||
+                                        msgContentLower.includes('awesome') ||
+                                        // Accept if AI acknowledges the equation (like "now that you have 2x=8")
+                                        msgContentLower.includes('now that you have') ||
                                         // Only allow "should be", "we have", "now" if no rejection AND explicit confirmation
                                         (!isRejected && (
                                           confirmMatch[0].includes('should be') ||
@@ -603,19 +651,56 @@ export const useKaTeX = () => {
       
       // Also check user messages for correct answers (when AI confirms them)
       // This helps catch cases where student provides the correct equation
-      // BUT: Be very strict - only add if AI explicitly confirms it
-      if (msg.role === 'user' && i > 0 && currentProblemMessages[i - 1]?.role === 'assistant') {
-        // Check if the previous AI message was asking for the equation
-        const prevAiMsg = currentProblemMessages[i - 1].content || ''
-        const isAskingForEquation = prevAiMsg.toLowerCase().includes('what does the equation') || 
-                                     prevAiMsg.toLowerCase().includes('can you write that down') ||
-                                     prevAiMsg.toLowerCase().includes('show me') ||
-                                     prevAiMsg.toLowerCase().includes('what do you get')
+      // Handle when user provides both operation and equation in one message
+      if (msg.role === 'user') {
+        // Check if user message contains both operation and equation with "to get" pattern
+        // Example: "-3 from both sides to get 2x=8"
+        const hasToGetPattern = msg.content.toLowerCase().includes('to get')
+        const userEqMatch = msg.content.match(/([\d]*x\s*=\s*\d+)/i)
         
-        if (isAskingForEquation) {
-          // Handles both "2x=2" and "x=1" formats
-          const userEqMatch = msg.content.match(/([\d]*x\s*=\s*\d+)/i)
-          if (userEqMatch && userEqMatch[1] !== currentEq) {
+        if (hasToGetPattern && userEqMatch && userEqMatch[1] !== currentEq && lastOperation) {
+          // User provided both operation and equation in one message
+          // Check if AI's next response is positive (not rejecting it)
+          const nextMsg = i + 1 < currentProblemMessages.length ? currentProblemMessages[i + 1] : null
+          
+          if (nextMsg && nextMsg.role === 'assistant') {
+            const nextContent = nextMsg.content.toLowerCase()
+            
+            // Check for REJECTION words
+            const isRejected = nextContent.includes('nice try') ||
+                              nextContent.includes('but let\'s') ||
+                              nextContent.includes('let\'s double-check') ||
+                              nextContent.includes('hmm') ||
+                              nextContent.includes('not quite') ||
+                              nextContent.includes('almost') ||
+                              nextContent.includes('close but') ||
+                              nextContent.includes('try again')
+            
+            // If not rejected, accept it (even if AI asks for verification)
+            if (!isRejected) {
+              steps.push({
+                equation: userEqMatch[1],
+                operation: lastOperation,
+                operationSymbol: lastOperation?.match(/^([+\-×÷])/)?.[1] || null,
+                operationValue: lastOperation ? parseFloat(lastOperation.match(/(\d+)/)?.[1] || '0') : null,
+                isCorrect: true
+              })
+              currentEq = userEqMatch[1]
+              lastOperation = null
+              continue
+            }
+          }
+        }
+        
+        // Original logic: Check if the previous AI message was asking for the equation
+        if (i > 0 && currentProblemMessages[i - 1]?.role === 'assistant') {
+          const prevAiMsg = currentProblemMessages[i - 1].content || ''
+          const isAskingForEquation = prevAiMsg.toLowerCase().includes('what does the equation') || 
+                                       prevAiMsg.toLowerCase().includes('can you write that down') ||
+                                       prevAiMsg.toLowerCase().includes('show me') ||
+                                       prevAiMsg.toLowerCase().includes('what do you get')
+          
+          if (isAskingForEquation && userEqMatch && userEqMatch[1] !== currentEq) {
             // CRITICAL: Check if next AI message confirms it (to avoid adding wrong guesses)
             // If there's no next message yet, or if it's not from assistant, DON'T ADD
             const nextMsg = i + 1 < currentProblemMessages.length ? currentProblemMessages[i + 1] : null
