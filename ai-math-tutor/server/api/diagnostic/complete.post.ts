@@ -104,9 +104,9 @@ export default defineEventHandler(async (event) => {
 
       // Set initial mastery level based on diagnostic
       // Note: Diagnostic answers are tentative - one correct answer doesn't mean 100% mastery
-      // We set mastery conservatively: correct = 80% (needs more practice), incorrect = 30% (partial knowledge), idontknow = 0%
+      // We set mastery conservatively: correct = 55% (needs more practice), incorrect = 30% (partial knowledge), idontknow = 0%
       const diagnosticMasteryLevel = answerType === 'correct' 
-        ? 80  // Strong indication but not 100% - needs verification through practice
+        ? 55  // Moderate indication but not 100% - needs verification through practice
         : answerType === 'idontknow' 
           ? 0   // Unknown - no mastery
           : 30  // Partial knowledge - got it wrong but might have some understanding
@@ -144,7 +144,7 @@ export default defineEventHandler(async (event) => {
     console.log('✅ [DIAGNOSTIC COMPLETE] Tested topic IDs:', testedTopicIds)
     
     // Sort frontier to prioritize:
-    // 1. Topics with 80% mastery (need completion to 100%) - HIGHEST PRIORITY
+    // 1. Topics with 50-60% mastery (need completion to 100%) - HIGHEST PRIORITY
     // 2. Untested root topics (no prerequisites) - foundational starting points
     // 3. Other untested frontier topics
     // 4. Topics with lower difficulty within same priority group
@@ -152,7 +152,7 @@ export default defineEventHandler(async (event) => {
       frontier.map(async (topic) => {
         const wasTested = testedTopicIds.includes(topic.id)
         const masteryLevel = masteryMap.get(topic.id) || 0
-        const isNearlyMastered = masteryLevel >= 80 && masteryLevel < 100
+        const isNearlyMastered = masteryLevel >= 50 && masteryLevel < 100
         const prerequisites = await kg.getPrerequisites(topic.id)
         const isRootTopic = prerequisites.length === 0
         return {
@@ -166,9 +166,9 @@ export default defineEventHandler(async (event) => {
       })
     )
     
-    // Sort: Nearly mastered (80%) topics first, then untested root topics, then other untested, then by difficulty
+    // Sort: Nearly mastered (50-60%) topics first, then untested root topics, then other untested, then by difficulty
     sortedFrontier.sort((a, b) => {
-      // Priority 1: Nearly mastered topics (80% < 100%) come first
+      // Priority 1: Nearly mastered topics (50% < 100%) come first
       if (a.isNearlyMastered && !b.isNearlyMastered) return -1
       if (!a.isNearlyMastered && b.isNearlyMastered) return 1
       
@@ -214,7 +214,7 @@ export default defineEventHandler(async (event) => {
       } : null
     })
 
-    // Get topics with strong understanding (topics answered correctly = 80% mastery) with full topic details
+    // Get topics with strong understanding (topics answered correctly = 55% mastery) with full topic details
     const strongUnderstandingResults = results.filter(r => r.answerType === 'correct')
     const strongUnderstandingTopics = await Promise.all(
       strongUnderstandingResults.map(async (result) => {
@@ -224,14 +224,14 @@ export default defineEventHandler(async (event) => {
           name: topic.name,
           difficulty: topic.difficulty,
           domain: topic.domain,
-          masteryLevel: 80 // Diagnostic mastery level - needs practice to reach 100%
+          masteryLevel: 55 // Diagnostic mastery level - needs practice to reach 100%
         } : null
       })
     )
     const strongUnderstandingTopicsList = strongUnderstandingTopics.filter(t => t !== null)
 
     // Calculate placement summary
-    // Note: Topics with "Strong Understanding" are at 80% mastery from diagnostic, not 100%
+    // Note: Topics with "Strong Understanding" are at 55% mastery from diagnostic, not 100%
     // True mastery (100%) requires practice and verification per pedagogy.md
     const placementSummary = {
       totalTopicsTested: results.length,
@@ -240,11 +240,11 @@ export default defineEventHandler(async (event) => {
       topicsInProgress: results.filter(r => r.answerType === 'incorrect').length,
       frontierTopics: frontier.length,
       recommendedStartingPoint: recommendedTopic,
-      strongUnderstandingTopics: strongUnderstandingTopicsList, // Array of topic objects with 80% mastery
+      strongUnderstandingTopics: strongUnderstandingTopicsList, // Array of topic objects with 55% mastery
       // Legacy field for backwards compatibility (deprecated - use strongUnderstandingTopics)
       topicsMastered: strongUnderstandingResults.length,
       masteredTopics: strongUnderstandingTopicsList,
-      note: 'Topics with "Strong Understanding" are at 80% mastery from diagnostic. Complete these to 100% mastery before advancing to new topics (per mastery learning principles).'
+      note: 'Topics with "Strong Understanding" are at 50-60% mastery from diagnostic. Complete these to 100% mastery before advancing to new topics (per mastery learning principles).'
     }
 
     return {

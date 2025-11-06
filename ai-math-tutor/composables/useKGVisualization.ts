@@ -33,8 +33,8 @@ export const useKGVisualization = () => {
   // Get mastery status based on percentage
   // Pedagogical distinction:
   // - 100% = True mastery (verified through practice)
-  // - 80-99% = Near mastery / Strong understanding (diagnostic mastery, needs verification)
-  // - 1-79% = In progress
+  // - 50-99% = Near mastery / Strong understanding (diagnostic mastery, needs verification)
+  // - 1-49% = In progress
   // - 0% = Locked or not started
   const getMasteryStatus = (
     masteryLevel: number,
@@ -42,7 +42,7 @@ export const useKGVisualization = () => {
     isFrontier: boolean
   ): 'mastered' | 'near-mastery' | 'in-progress' | 'locked' | 'frontier' => {
     if (masteryLevel >= 100) return 'mastered' // True mastery - verified through practice
-    if (masteryLevel >= 80) return 'near-mastery' // Strong understanding (diagnostic mastery) - needs verification
+    if (masteryLevel >= 50) return 'near-mastery' // Strong understanding (diagnostic mastery) - needs verification
     if (isFrontier && prerequisitesMet) return 'frontier'
     if (!prerequisitesMet) return 'locked'
     if (masteryLevel > 0) return 'in-progress'
@@ -55,9 +55,9 @@ export const useKGVisualization = () => {
       case 'mastered':
         return '#10b981' // Green - True mastery (100%)
       case 'near-mastery':
-        return '#06b6d4' // Cyan/Blue - Near mastery (80-99%) - strong understanding (distinct from green)
+        return '#06b6d4' // Cyan/Blue - Near mastery (50-99%) - strong understanding (distinct from green)
       case 'in-progress':
-        return '#f59e0b' // Yellow/Orange - In progress (1-79%)
+        return '#f59e0b' // Yellow/Orange - In progress (1-49%)
       case 'frontier':
         return '#ec4899' // Pink - Ready to learn
       case 'locked':

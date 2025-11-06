@@ -248,11 +248,11 @@ defineExpose({ refresh })
           </div>
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 rounded" style="background-color: #06b6d4;"></div>
-            <span class="text-gray-300">Near Mastery (80-99%)</span>
+            <span class="text-gray-300">Near Mastery (50-99%)</span>
           </div>
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 rounded bg-yellow-500"></div>
-            <span class="text-gray-300">In Progress (1-79%)</span>
+            <span class="text-gray-300">In Progress (1-49%)</span>
           </div>
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 rounded bg-pink-500 border-2 border-pink-400"></div>

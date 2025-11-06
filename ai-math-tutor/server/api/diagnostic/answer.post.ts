@@ -253,7 +253,7 @@ export default defineEventHandler(async (event) => {
 
     // Store diagnostic result for this topic
     // Note: Diagnostic mastery is tentative - we'll set final mastery in complete endpoint
-    const masteryLevel = answerType === 'correct' ? 80 : (answerType === 'idontknow' ? 0 : 30)
+    const masteryLevel = answerType === 'correct' ? 55 : (answerType === 'idontknow' ? 0 : 30)
     
     // Calculate overall accuracy so far (simplified)
     const accuracy = answerType === 'correct' ? 100 : 0

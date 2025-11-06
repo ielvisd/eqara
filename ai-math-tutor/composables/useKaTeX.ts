@@ -83,16 +83,22 @@ export const useKaTeX = () => {
           }
         }
         
+        // Skip equations that appear in step descriptions (not new problems)
+        // Look for indicators that this is describing a step, not stating a new problem
+        // Check for phrases that indicate the equation is a result of an operation
+        const isStepDescription = /(?:to get|we have|now we have|so we have|which gives|resulting in|we get|gives us|(?:subtract|add|multiply|divide).*(?:from|to) both sides)/i.test(content)
+        
         // Check for equation patterns: "4x-2 = 10", "4x+2 = 12", "2x+7=3", etc.
         // Pattern matches: coefficient*x +/- constant = number
         const equationMatch = content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
-        if (equationMatch) {
+        if (equationMatch && !isStepDescription) {
           return i
         }
         
         // Also match simpler forms: "4x = 10", "2x=5", etc.
+        // But skip if it's in a step description context
         const simpleMatch = content.match(/(\d+x\s*=\s*\d+)/i)
-        if (simpleMatch) {
+        if (simpleMatch && !isStepDescription) {
           return i
         }
         
@@ -143,15 +149,21 @@ export const useKaTeX = () => {
       
       // Prioritize user messages for the original problem
       if (msg.role === 'user') {
+        // Skip equations that appear in step descriptions (not original problems)
+        // Look for indicators that this is describing a step, not stating a new problem
+        // Check for phrases that indicate the equation is a result of an operation
+        const isStepDescription = /(?:to get|we have|now we have|so we have|which gives|resulting in|we get|gives us|(?:subtract|add|multiply|divide).*(?:from|to) both sides)/i.test(msg.content)
+        
         // Look for equation patterns: "4x-2 = 10", "4x+2 = 12", etc.
         // Pattern matches: coefficient*x +/- constant = number
         const equationMatch = msg.content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
-        if (equationMatch) {
+        if (equationMatch && !isStepDescription) {
           return equationMatch[1]
         }
         
         // Also match simpler forms: "4x = 10" if it's in the first message
-        if (i === 0) {
+        // But only if it's not a step description
+        if (i === 0 && !isStepDescription) {
           const simpleMatch = msg.content.match(/(\d+x\s*=\s*\d+)/i)
           if (simpleMatch) {
             return simpleMatch[1]

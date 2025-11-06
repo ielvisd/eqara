@@ -241,7 +241,7 @@
               </UBadge>
             </div>
             <p class="text-sm text-gray-400 mb-4">
-              <span class="font-semibold text-yellow-400">Complete these to 100% mastery before advancing!</span> These topics showed strong understanding (80%) during the diagnostic, but true mastery requires practice verification. Finish these first to build a solid foundation.
+              <span class="font-semibold text-yellow-400">Complete these to 100% mastery before advancing!</span> These topics showed strong understanding (50-60%) during the diagnostic, but true mastery requires practice verification. Finish these first to build a solid foundation.
             </p>
             <div class="max-h-64 overflow-y-auto space-y-2 pr-2">
               <button
@@ -256,7 +256,7 @@
                   <p class="text-xs text-gray-400">{{ topic.domain?.replace('_', ' ') || 'General' }}</p>
                 </div>
                 <UBadge color="warning" variant="subtle" size="xs" class="font-semibold">
-                  {{ topic.masteryLevel || 80 }}% → 100%
+                  {{ topic.masteryLevel || 55 }}% → 100%
                 </UBadge>
               </button>
             </div>
@@ -276,7 +276,7 @@
                 </p>
                 <p class="text-lg font-bold text-white mb-2">{{ placement.recommendedStartingPoint.name }}</p>
                 <p class="text-sm text-gray-400 leading-relaxed mb-2">{{ placement.recommendedStartingPoint.description }}</p>
-                <div v-if="placement.recommendedStartingPoint.masteryLevel !== undefined && placement.recommendedStartingPoint.masteryLevel >= 80 && placement.recommendedStartingPoint.masteryLevel < 100" class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div v-if="placement.recommendedStartingPoint.masteryLevel !== undefined && placement.recommendedStartingPoint.masteryLevel >= 50 && placement.recommendedStartingPoint.masteryLevel < 100" class="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                   <p class="text-xs text-yellow-300 font-medium">
                     <UIcon name="i-lucide-info" class="size-3 inline mr-1" />
                     You're at {{ placement.recommendedStartingPoint.masteryLevel }}% mastery. Complete this topic to 100% before moving to new topics (per mastery learning principles).
@@ -373,6 +373,7 @@ import { useKaTeX } from '~/composables/useKaTeX'
 
 const diagnostic = useDiagnostic()
 const { renderMath } = useKaTeX()
+const kgViz = useKGVisualization()
 
 // Helper to get or create session ID
 const getSessionId = () => {
@@ -469,7 +470,7 @@ const submitAnswer = async (answerType: 'correct' | 'incorrect' | 'idontknow') =
     const answer: DiagnosticAnswer = {
       topicId: currentTopic.value.id,
       answerType,
-      masteryLevel: answerType === 'correct' ? 80 : answerType === 'idontknow' ? 0 : 30, // Match server-side values
+      masteryLevel: answerType === 'correct' ? 55 : answerType === 'idontknow' ? 0 : 30, // Match server-side values
       accuracy: answerType === 'correct' ? 100 : 0
     }
     answers.value.push(answer)
@@ -538,6 +539,13 @@ const completeDiagnostic = async () => {
       frontierCount: result.frontier?.length || 0,
       recommendedTopic: result.placement.recommendedStartingPoint?.name
     })
+    
+    // Clear knowledge graph cache to ensure it reflects updated mastery levels
+    // The diagnostic updates mastery in the database, but the KG visualization uses cached data
+    // Real-time subscriptions in KGSidebar will also auto-refresh when sidebar is open,
+    // but this ensures cache is cleared even if sidebar isn't open yet
+    kgViz.clearCache(undefined, sessionId.value)
+    console.log('🔄 [CLIENT] Cleared knowledge graph cache after diagnostic completion')
     
     placement.value = result.placement
     isComplete.value = true
