@@ -1,5 +1,14 @@
 <template>
   <div class="min-h-screen bg-black">
+    <!-- Loading Overlay for Diagnostic Transition -->
+    <div v-if="isLoadingFromDiagnostic" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="text-center">
+        <UIcon name="i-lucide-loader-2" class="size-12 text-pink-400 animate-spin mx-auto mb-4" />
+        <h3 class="text-xl font-bold text-white mb-2">Starting Your Learning Session</h3>
+        <p class="text-gray-400">Preparing your personalized practice...</p>
+      </div>
+    </div>
+
     <!-- Animated background elements with hot pink -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute -top-40 -right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-overlay filter blur-xl opacity-10 animate-blob"></div>
@@ -8,11 +17,46 @@
     </div>
 
     <UContainer class="py-8 max-w-7xl relative z-10">
+      <!-- Breadcrumb showing current context -->
+      <div v-if="allSteps.length > 0" class="mb-4 flex items-center gap-2 text-sm text-gray-400 flex-wrap">
+        <UIcon name="i-lucide-home" class="size-4" />
+        <span>/</span>
+        <span class="text-green-400">Solving Problem</span>
+        <span v-if="activeSidebarTab === 'whiteboard'" class="flex items-center gap-1">
+          <span>/</span>
+          <UIcon name="i-lucide-pen-tool" class="size-4 text-pink-400" />
+          <span class="text-pink-400">Whiteboard</span>
+        </span>
+        <span v-else-if="activeSidebarTab === 'progress'" class="flex items-center gap-1">
+          <span>/</span>
+          <UIcon name="i-lucide-bar-chart-3" class="size-4 text-pink-400" />
+          <span class="text-pink-400">Progress</span>
+        </span>
+        <span v-else-if="activeSidebarTab === 'steps'" class="flex items-center gap-1">
+          <span>/</span>
+          <UIcon name="i-lucide-list-ordered" class="size-4 text-green-400" />
+          <span class="text-green-400">Steps</span>
+        </span>
+      </div>
+
       <!-- Side-by-side layout: Chat and Problem/Step -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Chat Interface (2/3 width on large screens) -->
-        <div class="lg:col-span-2">
-          <UCard class="shadow-2xl border border-pink-500/20 bg-black/90 backdrop-blur-sm">
+        <div class="lg:col-span-2 relative">
+          <!-- Visual Connection Indicator -->
+          <div 
+            v-if="activeSidebarTab === 'whiteboard' && messages.length > 0"
+            class="absolute -right-3 top-1/2 transform -translate-y-1/2 z-10 hidden lg:block"
+          >
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-px h-16 bg-gradient-to-b from-pink-500/50 to-transparent"></div>
+              <div class="w-8 h-8 bg-pink-500/20 rounded-full border-2 border-pink-500/50 flex items-center justify-center backdrop-blur-sm">
+                <UIcon name="i-lucide-arrow-right" class="size-4 text-pink-400" />
+              </div>
+              <div class="w-px h-16 bg-gradient-to-b from-transparent to-pink-500/50"></div>
+            </div>
+          </div>
+          <UCard class="shadow-2xl border border-pink-500/20 bg-black/90 backdrop-blur-sm relative">
         <template #header>
           <div class="flex flex-col gap-4">
             <!-- Logo and Title -->
@@ -56,6 +100,39 @@
                   Knowledge Graph
                 </UButton>
 
+                <!-- Whiteboard Toggle Button -->
+                <UButton
+                  icon="i-lucide-pen-tool"
+                  color="gray"
+                  variant="ghost"
+                  size="sm"
+                  :class="[
+                    'text-gray-400 hover:text-pink-400 hover:bg-pink-500/10',
+                    activeSidebarTab === 'whiteboard' ? 'text-pink-400 bg-pink-500/10' : ''
+                  ]"
+                  @click="activeSidebarTab = 'whiteboard'"
+                  aria-label="Open whiteboard"
+                >
+                  Whiteboard
+                </UButton>
+
+                <!-- TTS Toggle Button -->
+                <UButton
+                  v-if="voiceSupported"
+                  :icon="ttsEnabled ? 'i-lucide-volume-2' : 'i-lucide-volume-x'"
+                  color="gray"
+                  variant="ghost"
+                  size="sm"
+                  :class="[
+                    'text-gray-400 hover:text-pink-400 hover:bg-pink-500/10',
+                    ttsEnabled ? 'text-pink-400 bg-pink-500/10' : ''
+                  ]"
+                  @click="toggleTTS"
+                  :aria-label="ttsEnabled ? 'Disable text-to-speech' : 'Enable text-to-speech'"
+                >
+                  <span class="sr-only">{{ ttsEnabled ? 'TTS On' : 'TTS Off' }}</span>
+                </UButton>
+
                 <!-- Auth UI -->
                 <div v-if="isAuthenticated" class="flex items-center gap-2">
                   <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
@@ -96,9 +173,9 @@
                   <UIcon name="i-lucide-star" class="size-3.5" />
                   <span class="whitespace-nowrap">Level {{ gameState.level }}</span>
                 </div>
-                <div v-if="gameState.streak > 0" class="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 text-orange-400 font-medium rounded-full border border-orange-500/30">
+                <div v-if="gameState.currentStreak > 0" class="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 text-orange-400 font-medium rounded-full border border-orange-500/30">
                   <UIcon name="i-lucide-flame" class="size-3.5" />
-                  <span class="whitespace-nowrap">{{ gameState.streak }} Day</span>
+                  <span class="whitespace-nowrap">{{ gameState.currentStreak }} Day</span>
                 </div>
                 <!-- Review Count Badge -->
                 <button
@@ -207,20 +284,46 @@
                 <div class="prose prose-sm dark:prose-invert max-w-none">
                   <template v-for="msg in messages" :key="msg.id">
                     <template v-if="msg.id === message.id">
-                      <div v-if="msg.role === 'user'" class="bg-pink-500/10 rounded-lg p-3 border-l-4 border-pink-500">
+                      <div 
+                        v-if="msg.role === 'user'" 
+                        :class="[
+                          'rounded-lg p-3 border-l-4 transition-all duration-300',
+                          (msg as any).canvasImage 
+                            ? 'bg-pink-500/15 border-pink-500 shadow-pink-500/10 shadow-lg' 
+                            : 'bg-pink-500/10 border-pink-500'
+                        ]"
+                      >
                         <div class="flex items-center gap-2 mb-2">
                           <UIcon name="i-lucide-user" class="size-4 text-pink-400" />
                           <span class="text-sm font-medium text-pink-400">You</span>
+                          <span v-if="(msg as any).canvasImage" class="px-2 py-0.5 bg-pink-500/20 text-pink-300 text-xs rounded-full border border-pink-500/30 flex items-center gap-1">
+                            <UIcon name="i-lucide-pen-tool" class="size-3" />
+                            Drawing
+                          </span>
                         </div>
-                        <p class="text-gray-200" v-html="renderMath(msg.content)"></p>
+                        <p class="text-gray-200 mb-3" v-html="renderMath(msg.content)"></p>
+                        <!-- Canvas Preview -->
+                        <CanvasPreview
+                          v-if="(msg as any).canvasImage"
+                          :canvas-image="(msg as any).canvasImage"
+                          @open-whiteboard="activeSidebarTab = 'whiteboard'"
+                        />
                       </div>
-                      <div v-else class="bg-black/50 rounded-lg p-4 border border-pink-500/20 shadow-lg">
+                      <div 
+                        v-else 
+                        :class="[
+                          'rounded-lg p-4 border shadow-lg transition-all duration-300',
+                          allSteps.length > 0 
+                            ? 'bg-black/50 border-green-500/30 shadow-green-500/10' 
+                            : 'bg-black/50 border-pink-500/20'
+                        ]"
+                      >
                         <div class="flex items-center gap-2 mb-3">
                           <div class="w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center">
                             <UIcon name="i-lucide-brain" class="size-4 text-white" />
                           </div>
                           <div class="flex-1">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                               <span class="text-sm font-medium text-white">Eqara</span>
                               <!-- Hint indicator if message contains hint keywords -->
                               <span v-if="isHintMessage(msg)" class="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
@@ -243,6 +346,19 @@
                         </div>
                         <div class="space-y-3">
                           <div class="text-gray-200 leading-relaxed whitespace-pre-wrap" v-html="renderMath(msg.content)"></div>
+                          
+                          <!-- Next Problem Button (appears after XP reward) -->
+                          <div v-if="msg.xpReward && msg.xpReward > 0" class="mt-3">
+                            <UButton
+                              color="pink"
+                              size="sm"
+                              icon="i-lucide-arrow-right"
+                              @click="requestNextProblem"
+                            >
+                              Next Problem
+                            </UButton>
+                          </div>
+                          
                           <div v-if="msg.steps" class="bg-pink-500/10 rounded-lg p-4 border border-pink-500/20">
                             <div class="flex items-center gap-2 mb-3">
                               <UIcon name="i-lucide-list-ordered" class="size-4 text-pink-400" />
@@ -268,7 +384,7 @@
         </div>
 
         <!-- Dashboard Home (when no messages) -->
-        <div v-else class="min-h-[400px]">
+        <div v-else class="flex-1 flex flex-col justify-center items-center">
           <DashboardHome 
             @continue-learning="handleContinueLearning"
             @start-review="showReviewSession = true"
@@ -291,9 +407,12 @@
         </div>
 
         <!-- Chat Input with Image Upload Option -->
-        <div class="mt-6 space-y-3">
+        <div class="mt-6 space-y-3 flex flex-col items-center">
           <!-- Image Preview if uploaded -->
-          <div v-if="hasFile && getFile" class="mb-3 p-3 bg-black/50 rounded-lg border border-pink-500/20 flex items-center justify-between">
+          <div v-if="hasFile && getFile" :class="[
+            'mb-3 p-3 bg-black/50 rounded-lg border border-pink-500/20 flex items-center justify-between',
+            messages.length === 0 ? 'w-full max-w-4xl' : 'w-full max-w-4xl'
+          ]">
             <div class="flex items-center gap-3">
               <UIcon name="i-lucide-image" class="size-5 text-pink-400" />
               <div>
@@ -325,7 +444,10 @@
           </div>
 
           <div 
-            class="relative"
+            :class="[
+              'relative',
+              messages.length === 0 ? 'w-full' : 'w-full max-w-4xl'
+            ]"
             @dragover.prevent="handleDragOver"
             @dragleave.prevent="handleDragLeave"
             @drop.prevent="handleDrop"
@@ -333,7 +455,7 @@
           >
             <UChatPrompt
               v-model="textProblem"
-              placeholder="Type your problem or drag & drop an image here..."
+              placeholder="Type your problem, upload an image, or draw it below"
               :loading="isProcessing"
               :disabled="isProcessing"
               :class="[
@@ -345,7 +467,42 @@
               @submit="processText"
             >
               <template #trailing>
-                <div class="flex items-center justify-center gap-2 px-3">
+                <div class="flex items-center justify-center gap-2 px-3 h-full">
+                  <!-- Whiteboard Submit Shortcut (when whiteboard has drawing) -->
+                  <UButton
+                    v-if="activeSidebarTab === 'whiteboard' && whiteboardRef && whiteboardRef.hasDrawing"
+                    icon="i-lucide-pen-tool"
+                    variant="solid"
+                    size="sm"
+                    class="!bg-pink-500 hover:!bg-pink-600 shadow-pink-500/30 hover:shadow-pink-500/50 transition-all duration-200 animate-pulse-slow"
+                    :aria-label="'Submit whiteboard drawing'"
+                    @click="handleWhiteboardSubmitFromChat"
+                  >
+                    <span class="hidden sm:inline">Submit Drawing</span>
+                  </UButton>
+
+                  <!-- Microphone Button -->
+                  <UButton
+                    v-if="voiceSupported"
+                    :icon="isListening ? 'i-lucide-mic' : 'i-lucide-mic-off'"
+                    :color="isListening ? 'pink' : recognitionError ? 'red' : 'gray'"
+                    variant="ghost"
+                    size="sm"
+                    :class="[
+                      'transition-all duration-200',
+                      isListening 
+                        ? 'animate-pulse bg-pink-500/20 text-pink-400' 
+                        : recognitionError
+                        ? 'text-red-400 hover:text-red-300'
+                        : 'text-gray-400 hover:text-pink-400 hover:bg-pink-500/10'
+                    ]"
+                    :disabled="isProcessing || isDragging"
+                    :aria-label="isListening ? 'Stop listening' : 'Start voice input'"
+                    @click="handleVoiceToggle"
+                  >
+                    <span class="sr-only">{{ isListening ? 'Listening' : 'Start voice input' }}</span>
+                  </UButton>
+                  
                   <UChatPromptSubmit :status="chatStatus" @stop="stopProcessing" />
                 </div>
               </template>
@@ -371,102 +528,188 @@
       </UCard>
         </div>
 
-        <!-- Problem/Step Sidebar (1/3 width on large screens) -->
-        <div class="lg:col-span-1">
-          <UCard class="shadow-2xl border border-pink-500/20 bg-black/90 backdrop-blur-sm sticky top-8">
-            <template #header>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg shadow-pink-500/50">
-                  <UIcon name="i-lucide-file-text" class="size-5 text-white" />
+        <!-- Tabbed Sidebar (1/3 width on large screens) -->
+        <div class="lg:col-span-1 relative">
+          <UCard 
+            :class="[
+              'shadow-2xl border bg-black/90 backdrop-blur-sm sticky top-8 h-[calc(100vh-4rem)] flex flex-col transition-all duration-300',
+              activeSidebarTab === 'whiteboard' ? 'border-pink-500/40 shadow-pink-500/20' :
+              'border-green-500/40 shadow-green-500/20'
+            ]"
+            :ui="{
+              body: 'flex-1 min-h-0 flex flex-col p-0'
+            }"
+          >
+            <!-- Tabbed Interface -->
+            <UTabs 
+              v-model="activeSidebarTab" 
+              :items="sidebarTabs" 
+              variant="link"
+              class="flex-1 flex flex-col overflow-hidden"
+              :ui="{ 
+                root: 'flex flex-col h-full overflow-hidden', 
+                list: 'flex gap-1 min-w-0 overflow-x-auto', 
+                trigger: 'flex-shrink-0 min-w-fit px-3',
+                content: 'flex-1 min-h-0 flex flex-col overflow-hidden'
+              }"
+              :unmount-on-hide="false"
+            >
+              <template #item="{ item: tabItem }">
+                <div 
+                  class="flex items-center gap-2 whitespace-nowrap"
+                  :title="tabItem.label"
+                  :aria-label="tabItem.label"
+                >
+                  <UIcon :name="tabItem.icon" class="size-4 flex-shrink-0" />
+                  <span class="text-sm">
+                    <span class="hidden sm:inline">{{ tabItem.label }}</span>
+                    <span class="sm:hidden">{{ tabItem.shortLabel || tabItem.label }}</span>
+                  </span>
                 </div>
-                <div>
-                  <h3 class="text-lg font-bold text-white">Current Problem</h3>
-                  <p class="text-xs text-gray-400">Step-by-step progress</p>
-                </div>
-              </div>
-            </template>
+              </template>
 
-            <div class="space-y-4">
-              <!-- Step-by-step progression -->
-              <div v-if="allSteps.length > 0" class="space-y-3">
-                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Step-by-step Solution</div>
-                
-                <template v-for="(step, index) in allSteps" :key="index">
-                  <!-- Original Problem - Distinct color (blue/purple) -->
-                  <div v-if="index === 0" 
-                    class="rounded-lg p-4 border-2 border-blue-500/40 bg-blue-500/10 shadow-lg"
-                  >
-                    <div class="text-center">
-                      <div class="text-sm text-blue-400 mb-1 font-medium">Original Problem</div>
-                      <div 
-                        class="text-lg font-mono text-white"
-                        v-html="renderMath(step.equation, true)"
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <!-- Operation - Show BEFORE the equation it produces -->
-                  <div v-if="step.operation" class="py-2">
-                    <div class="text-center">
-                      <div 
-                        class="text-sm font-semibold px-3 py-1.5 rounded-full inline-block"
-                        :class="step.isCorrect 
-                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' 
-                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'"
-                      >
-                        {{ step.operation }}
+              <!-- Whiteboard Tab -->
+              <template #whiteboard>
+                <div class="flex-1 flex flex-col gap-3 min-h-0">
+                  <!-- First-time user hint -->
+                  <div v-if="!hasSeenWhiteboardHint" class="mb-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-sm text-blue-300">
+                    <div class="flex items-start gap-2">
+                      <UIcon name="i-lucide-lightbulb" class="size-4 mt-0.5 flex-shrink-0" />
+                      <div class="flex-1">
+                        <p class="font-medium mb-1">Tip: Draw your solution here</p>
+                        <p class="text-xs text-blue-400">Click "Submit Drawing" below when you're done, or use the button in the chat above.</p>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Intermediate/Final Equations - Green for correct -->
-                  <div v-if="index > 0" 
-                    :class="[
-                      'rounded-lg p-4 border-2 transition-all',
-                      index === allSteps.length - 1
-                        ? 'bg-green-500/10 border-green-500/40 shadow-lg shadow-green-500/10'
-                        : step.isCorrect
-                          ? 'bg-green-500/10 border-green-500/30'
-                          : 'bg-pink-500/10 border-pink-500/20'
-                    ]"
-                  >
-                    <div class="flex items-center justify-center gap-2">
-                      <div 
-                        class="text-lg font-mono text-center"
-                        :class="step.isCorrect ? 'text-green-300' : 'text-white'"
-                        v-html="renderMath(step.equation, true)"
-                      ></div>
-                      <UIcon 
-                        v-if="step.isCorrect && index === allSteps.length - 1" 
-                        name="i-lucide-check-circle" 
-                        class="size-5 text-green-400 flex-shrink-0"
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        icon="i-lucide-x"
+                        class="text-blue-400"
+                        @click="hasSeenWhiteboardHint = true"
+                        aria-label="Dismiss hint"
                       />
                     </div>
                   </div>
-                </template>
-              </div>
-              
-              <!-- Substitution/Verification Section -->
-              <div v-if="hasVerification" class="mt-6 pt-6 border-t border-gray-700">
-                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Substitute/Verify</div>
-                <div class="space-y-2">
-                  <div class="text-sm text-purple-300 font-medium">Substitute x = {{ finalSolution }}</div>
-                  <div class="bg-purple-500/10 rounded-lg p-3 border border-purple-500/30">
-                    <div class="text-white font-mono text-sm" v-html="renderMath(verificationEquation, true)"></div>
+                  
+                  <div class="flex-1 overflow-hidden min-h-0">
+                    <div class="h-[calc(100vh-12rem)] lg:h-[calc(100vh-12rem)] md:h-[500px] h-[400px]">
+                      <InteractiveWhiteboard
+                        ref="whiteboardRef"
+                        :show-controls="true"
+                        :readonly="false"
+                        @submit="handleWhiteboardSubmit"
+                        @draw="updateWhiteboardState"
+                      />
+                    </div>
                   </div>
-                  <div class="text-sm text-green-400 font-medium flex items-center gap-2">
-                    <UIcon name="i-lucide-check-circle" class="size-4" />
-                    {{ verificationResult }}
+                  
+                  <!-- Visual indicator when drawing exists but not submitted -->
+                  <div 
+                    v-if="whiteboardRef && whiteboardRef.hasDrawing && activeSidebarTab === 'whiteboard'"
+                    class="mt-2 p-2 bg-pink-500/10 border border-pink-500/30 rounded-lg text-center"
+                  >
+                    <p class="text-xs text-pink-300 flex items-center justify-center gap-2">
+                      <UIcon name="i-lucide-pen-tool" class="size-3 animate-pulse" />
+                      <span>Drawing ready - submit below or use the button in chat</span>
+                    </p>
                   </div>
                 </div>
-              </div>
+              </template>
 
-              <!-- Empty State -->
-              <div v-if="allSteps.length === 0" class="text-center py-8">
-                <UIcon name="i-lucide-calculator" class="size-12 text-gray-600 mx-auto mb-3" />
-                <p class="text-sm text-gray-500">Start solving a problem to see it here</p>
-              </div>
-            </div>
+              <!-- Progress Tab -->
+              <template #progress>
+                <div class="flex-1 h-full min-h-0 overflow-y-auto overflow-x-hidden p-4" style="overscroll-behavior: contain;">
+                  <MasteryDashboard
+                    :user-id="user?.id"
+                    :session-id="sessionId"
+                  />
+                </div>
+              </template>
+
+              <!-- Steps Tab -->
+              <template #steps>
+                <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                  <!-- Step-by-step progression -->
+                  <div v-if="allSteps.length > 0" class="space-y-3">
+                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Step-by-step Solution</div>
+                    
+                    <template v-for="(step, index) in allSteps" :key="index">
+                      <!-- Original Problem - Distinct color (blue/purple) -->
+                      <div v-if="index === 0" 
+                        class="rounded-lg p-4 border-2 border-blue-500/40 bg-blue-500/10 shadow-lg"
+                      >
+                        <div class="text-center">
+                          <div class="text-sm text-blue-400 mb-1 font-medium">Original Problem</div>
+                          <div 
+                            class="text-lg font-mono text-white"
+                            v-html="renderMath(step.equation, true)"
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      <!-- Operation - Show BEFORE the equation it produces -->
+                      <div v-if="step.operation" class="py-2">
+                        <div class="text-center">
+                          <div 
+                            class="text-sm font-semibold px-3 py-1.5 rounded-full inline-block"
+                            :class="step.isCorrect 
+                              ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' 
+                              : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'"
+                          >
+                            {{ step.operation }}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Intermediate/Final Equations - Green for correct -->
+                      <div v-if="index > 0" 
+                        :class="[
+                          'rounded-lg p-4 border-2 transition-all',
+                          index === allSteps.length - 1
+                            ? 'bg-green-500/10 border-green-500/40 shadow-lg shadow-green-500/10'
+                            : step.isCorrect
+                              ? 'bg-green-500/10 border-green-500/30'
+                              : 'bg-pink-500/10 border-pink-500/20'
+                        ]"
+                      >
+                        <div class="flex items-center justify-center gap-2">
+                          <div 
+                            class="text-lg font-mono text-center"
+                            :class="step.isCorrect ? 'text-green-300' : 'text-white'"
+                            v-html="renderMath(step.equation, true)"
+                          ></div>
+                          <UIcon 
+                            v-if="step.isCorrect && index === allSteps.length - 1" 
+                            name="i-lucide-check-circle" 
+                            class="size-5 text-green-400 flex-shrink-0"
+                          />
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                  
+                  <!-- Substitution/Verification Section -->
+                  <div v-if="hasVerification" class="mt-6 pt-6 border-t border-gray-700">
+                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Substitute/Verify</div>
+                    <div class="space-y-2">
+                      <div class="text-sm text-purple-300 font-medium">Substitute x = {{ finalSolution }}</div>
+                      <div class="bg-purple-500/10 rounded-lg p-3 border border-purple-500/30">
+                        <div class="text-white font-mono text-sm" v-html="renderMath(verificationEquation, true)"></div>
+                      </div>
+                      <div class="text-sm text-green-400 font-medium flex items-center gap-2">
+                        <UIcon name="i-lucide-check-circle" class="size-4" />
+                        {{ verificationResult }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Empty State -->
+                  <div v-if="allSteps.length === 0" class="text-center py-8">
+                    <UIcon name="i-lucide-calculator" class="size-12 text-gray-600 mx-auto mb-3" />
+                    <p class="text-sm text-gray-500">Start solving a problem to see it here</p>
+                  </div>
+                </div>
+              </template>
+            </UTabs>
           </UCard>
         </div>
       </div>
@@ -623,9 +866,9 @@
       @mousedown.prevent="startDrag($event, 'quiz')"
       @touchstart.prevent="startDrag($event, 'quiz')"
     >
-      <div class="flex items-center gap-3 flex-row-reverse">
+      <div class="flex items-center gap-3">
         <!-- Label (shown on hover) -->
-        <div class="hidden group-hover:block bg-gradient-to-r from-black/95 to-black/90 backdrop-blur-sm border border-pink-500/40 rounded-lg px-4 py-2.5 shadow-xl shadow-pink-500/30 pointer-events-none transition-all duration-300">
+        <div class="bg-gradient-to-r from-black/95 to-black/90 backdrop-blur-sm border border-pink-500/40 rounded-lg px-4 py-2.5 shadow-xl shadow-pink-500/30 pointer-events-none transition-all duration-300 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0">
           <span class="text-sm font-semibold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">Practice Quiz</span>
         </div>
         
@@ -666,8 +909,47 @@ const toast = useToast()
 const { getSessionId, saveMessage, loadChatHistory, subscribeToChat, resetSession, clearChatHistory } = useChatHistory()
 const { gameState, addXP } = useGamification()
 
+// Voice interface
+const {
+  isListening,
+  isSpeaking,
+  ttsEnabled,
+  isSupported: voiceSupported,
+  recognitionError,
+  currentTranscript,
+  startListening,
+  stopListening,
+  getTranscript,
+  clearTranscript,
+  toggleTTS,
+  speak,
+  stopSpeaking,
+  cleanup: cleanupVoice
+} = useVoice()
+
 // KaTeX for math rendering
 const { renderMath, extractCurrentEquation, extractCurrentStep, extractLastOperation, extractAllSteps, findCurrentProblemStart } = useKaTeX()
+
+// Whiteboard state
+const whiteboardState = useWhiteboard()
+const whiteboardRef = ref<any>(null)
+// Initialize Whiteboard tab as default - must match a tab's slot value
+const activeSidebarTab = ref('whiteboard')
+const hasSeenWhiteboardHint = ref(false)
+
+// Update whiteboard state when drawing occurs
+const updateWhiteboardState = () => {
+  // Trigger reactivity for hasDrawing check
+  nextTick()
+}
+
+// Sidebar tabs configuration
+// UTabs uses slot names as identifiers - v-model should match the slot name
+const sidebarTabs = [
+  { label: 'Steps', shortLabel: 'Steps', icon: 'i-lucide-list-ordered', slot: 'steps', value: 'steps' },
+  { label: 'Whiteboard', shortLabel: 'Board', icon: 'i-lucide-pen-tool', slot: 'whiteboard', value: 'whiteboard' },
+  { label: 'Progress', shortLabel: 'Stats', icon: 'i-lucide-bar-chart-3', slot: 'progress', value: 'progress' }
+]
 
 // File upload state - UFileUpload can return File, File[], or null
 const files = ref<File | File[] | null>(null) as any
@@ -691,6 +973,7 @@ const showKGSidebar = ref(false)
 const showQuizInterface = ref(false)
 const showReviewSession = ref(false)
 const showAuthModal = ref(false)
+const isLoadingFromDiagnostic = ref(false)
 let unsubscribeChat: (() => void) | null = null
 
 // Auth state
@@ -712,8 +995,13 @@ const dragStartPos = ref({ x: 0, y: 0 })
 const fabStartPos = ref({ x: 0, y: 0 })
 const hasDragged = ref(false)
 
-// Load saved FAB position from localStorage
+// Load saved FAB position from localStorage  
 onMounted(() => {
+  // Ensure Steps tab is selected on mount - UTabs might not sync initial value properly
+  nextTick(() => {
+    activeSidebarTab.value = 'steps'
+  })
+  
   const saved = localStorage.getItem('quizFabPosition')
   if (saved) {
     try {
@@ -1204,9 +1492,201 @@ const processImage = async () => {
   }
 }
 
+// Handle whiteboard drawing submission
+// Handle whiteboard submit from chat shortcut button
+const handleWhiteboardSubmitFromChat = async () => {
+  if (!whiteboardRef.value || !whiteboardRef.value.hasDrawing) return
+  try {
+    const imageData = await whiteboardRef.value.exportCanvas()
+    await handleWhiteboardSubmit(imageData)
+  } catch (error) {
+    console.error('Error submitting whiteboard from chat:', error)
+  }
+}
+
+const handleWhiteboardSubmit = async (canvasImageData: string) => {
+  if (!whiteboardRef.value || isProcessing.value) return
+
+  isProcessing.value = true
+  chatStatus.value = 'submitted'
+
+  // Get current problem context
+  const currentProblem = extractCurrentEquation(messages.value) || ''
+  const currentStep = extractCurrentStep(messages.value) || ''
+  const problemStart = findCurrentProblemStart(messages.value)
+
+  // Create user message with canvas preview
+  const userMessage = {
+    id: `user-${Date.now()}`,
+    role: 'user' as const,
+    content: '📝 [Drawing submitted]',
+    timestamp: new Date(),
+    canvasImage: canvasImageData
+  }
+  messages.value.push(userMessage)
+  await saveMessage(userMessage, sessionId.value)
+
+  try {
+    chatStatus.value = 'streaming'
+
+    // Prepare context for vision API
+    const context = {
+      currentProblem: currentProblem,
+      currentStep: currentStep,
+      topic: messages.value[problemStart]?.content || ''
+    }
+
+    // Call vision API with whiteboard analysis
+    const visionResponse = await $fetch<{
+      success: boolean
+      isCorrect: boolean
+      confidence: number
+      errors: string[]
+      nextSteps: string[]
+      explanation: string
+      extractedSolution: string
+      provider?: string
+      timestamp?: string
+    }>('/api/vision', {
+      method: 'POST',
+      body: {
+        canvasSnapshot: canvasImageData,
+        analyzeDrawing: true,
+        context: context
+      }
+    })
+
+    if (!visionResponse.success) {
+      throw new Error('Failed to analyze drawing')
+    }
+
+    // Prepare chat history for context
+    const chatHistory = messages.value
+      .slice(0, -1) // Exclude current user message
+      .map((msg: typeof messages.value[0]) => ({
+        role: msg.role,
+        content: msg.content
+      }))
+
+    // Call chat API with drawing analysis to generate Socratic response
+    const chatResponse = await $fetch<{
+      success: boolean
+      message?: string
+      xpReward?: number
+      provider?: string
+      timestamp?: string
+      whiteboard?: {
+        commands: Array<{
+          type: string
+          tool?: string
+          from?: [number, number]
+          to?: [number, number]
+          center?: [number, number]
+          radius?: number
+          shape?: string
+          content?: string
+          position?: [number, number]
+          color?: string
+          strokeWidth?: number
+          fontSize?: number
+        }>
+      }
+    }>('/api/chat', {
+      method: 'POST',
+      body: {
+        message: '📝 [Drawing submitted]',
+        chatHistory: chatHistory,
+        sessionId: sessionId.value,
+        userId: user.value?.id || undefined,
+        drawingAnalysis: {
+          isCorrect: visionResponse.isCorrect,
+          confidence: visionResponse.confidence,
+          errors: visionResponse.errors,
+          nextSteps: visionResponse.nextSteps,
+          explanation: visionResponse.explanation,
+          extractedSolution: visionResponse.extractedSolution
+        }
+      }
+    })
+
+    if (!chatResponse.success || !chatResponse.message) {
+      throw new Error('Failed to get response from AI')
+    }
+
+    // Add assistant response
+    const assistantMessage = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant' as const,
+      content: chatResponse.message,
+      timestamp: new Date(),
+      xpReward: chatResponse.xpReward || 10,
+      whiteboard: chatResponse.whiteboard || undefined
+    }
+    messages.value.push(assistantMessage)
+
+    // Save assistant message and award XP
+    await saveMessage(assistantMessage, sessionId.value)
+    if (assistantMessage.xpReward) {
+      await addXP(assistantMessage.xpReward)
+    }
+
+    // Handle whiteboard commands if present
+    if (chatResponse.whiteboard?.commands && whiteboardRef.value) {
+      // Switch to whiteboard tab if not already there
+      if (activeSidebarTab.value !== 'whiteboard') {
+        activeSidebarTab.value = 'whiteboard'
+      }
+      
+      // Wait for whiteboard to be ready, then render commands
+      await nextTick()
+      setTimeout(() => {
+        if (whiteboardRef.value?.renderCommands && chatResponse.whiteboard?.commands) {
+          whiteboardRef.value.renderCommands(chatResponse.whiteboard.commands)
+        }
+      }, 300)
+    }
+
+    // Update hint/remediation banners
+    updateBanners()
+
+    chatStatus.value = 'ready'
+
+    toast.add({
+      title: 'Response generated! 🎉',
+      description: `XP Earned: +${assistantMessage.xpReward}`,
+      color: 'success',
+      icon: 'i-lucide-lightbulb'
+    })
+  } catch (error: any) {
+    chatStatus.value = 'error'
+
+    // Remove the user message if processing failed
+    messages.value.pop()
+
+    const errorMessage = error.data?.message || error.message || 'An error occurred while analyzing your drawing'
+
+    toast.add({
+      title: 'Analysis failed',
+      description: errorMessage.includes('API')
+        ? 'Please configure OPENAI_API_KEY or GROK_API_KEY in your .env file'
+        : 'Please try again with a clearer drawing',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isProcessing.value = false
+  }
+}
+
 // Process text input
 const processText = async () => {
   if (!textProblem.value.trim()) return
+
+  // Stop voice input if active
+  if (isListening.value) {
+    stopListening()
+    clearTranscript()
+  }
 
   const userInput = textProblem.value.trim()
   textProblem.value = ''
@@ -1253,6 +1733,22 @@ const processText = async () => {
       xpReward?: number
       provider?: string
       timestamp?: string
+      whiteboard?: {
+        commands: Array<{
+          type: string
+          tool?: string
+          from?: [number, number]
+          to?: [number, number]
+          center?: [number, number]
+          radius?: number
+          shape?: string
+          content?: string
+          position?: [number, number]
+          color?: string
+          strokeWidth?: number
+          fontSize?: number
+        }>
+      }
     }>('/api/chat', {
       method: 'POST',
       body: {
@@ -1274,7 +1770,8 @@ const processText = async () => {
       role: 'assistant' as const,
       content: response.message,
       timestamp: new Date(),
-      xpReward: response.xpReward || 10
+      xpReward: response.xpReward || 10,
+      whiteboard: response.whiteboard || undefined
     }
     messages.value.push(assistantMessage)
 
@@ -1282,6 +1779,22 @@ const processText = async () => {
     await saveMessage(assistantMessage, sessionId.value)
     if (assistantMessage.xpReward) {
       await addXP(assistantMessage.xpReward)
+    }
+
+    // Handle whiteboard commands if present
+    if (response.whiteboard?.commands && whiteboardRef.value) {
+      // Switch to whiteboard tab if not already there
+      if (activeSidebarTab.value !== 'whiteboard') {
+        activeSidebarTab.value = 'whiteboard'
+      }
+      
+      // Wait for whiteboard to be ready, then render commands
+      await nextTick()
+      setTimeout(() => {
+        if (whiteboardRef.value?.renderCommands && response.whiteboard?.commands) {
+          whiteboardRef.value.renderCommands(response.whiteboard.commands)
+        }
+      }, 300)
     }
 
     // Update hint/remediation banners
@@ -1328,6 +1841,112 @@ const stopProcessing = () => {
   })
 }
 
+// Request next problem
+const requestNextProblem = async () => {
+  textProblem.value = "I'm ready for the next problem!"
+  await processText()
+}
+
+// Voice handlers
+const handleVoiceToggle = async () => {
+  if (isListening.value) {
+    // Stop listening and get transcript
+    const transcript = stopListening()
+    if (transcript.trim()) {
+      textProblem.value = transcript.trim()
+    }
+    clearTranscript()
+  } else {
+    // Start listening
+    if (isProcessing.value) {
+      toast.add({
+        title: 'Cannot start voice input',
+        description: 'Please wait for the current request to complete',
+        color: 'warning',
+        icon: 'i-lucide-alert-circle'
+      })
+      return
+    }
+    
+    // Clear any previous error
+    clearTranscript()
+    
+    const success = await startListening()
+    if (!success) {
+      // Show error toast if recognitionError is set
+      if (recognitionError.value) {
+        toast.add({
+          title: 'Voice input failed',
+          description: recognitionError.value,
+          color: 'error',
+          icon: 'i-lucide-mic-off'
+        })
+      }
+    }
+  }
+}
+
+// Watch for transcript updates and populate input field
+watch(currentTranscript, (newTranscript) => {
+  if (newTranscript && isListening.value) {
+    textProblem.value = newTranscript
+  }
+})
+
+// Watch for recognition errors
+watch(recognitionError, (error) => {
+  if (error && isListening.value) {
+    toast.add({
+      title: 'Voice recognition error',
+      description: error,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+})
+
+// Watch for new assistant messages and speak them if TTS is enabled
+watch(() => messages.value.length, (newLength, oldLength) => {
+  if (!ttsEnabled.value || newLength <= oldLength) return
+  
+  // Get the last message
+  const lastMessage = messages.value[messages.value.length - 1]
+  
+  // Only speak assistant messages
+  if (lastMessage && lastMessage.role === 'assistant') {
+    // Small delay to ensure message is fully rendered
+    nextTick(() => {
+      setTimeout(() => {
+        speak(lastMessage.content)
+      }, 500)
+    })
+  }
+}, { flush: 'post' })
+
+// Also watch the last message content for streaming updates
+const lastAssistantMessage = computed(() => {
+  const assistantMessages = messages.value.filter(m => m.role === 'assistant')
+  return assistantMessages[assistantMessages.length - 1]
+})
+
+watch(() => lastAssistantMessage.value?.content, (newContent, oldContent) => {
+  if (!ttsEnabled.value || !newContent || newContent === oldContent) return
+  
+  // Only speak if message is complete (not streaming)
+  // Check if content has changed significantly (more than just a few characters)
+  if (oldContent && newContent.length > oldContent.length + 10) {
+    // Message is still streaming, stop and restart
+    stopSpeaking()
+    
+    // Small delay before speaking updated content
+    setTimeout(() => {
+      if (ttsEnabled.value && newContent) {
+        speak(newContent)
+      }
+    }, 1000)
+  }
+})
+
 // Clear upload
 const clearUpload = () => {
   files.value = null
@@ -1362,7 +1981,7 @@ const countStuckTurns = () => {
   // Look backwards through recent messages
   for (let i = messages.value.length - 1; i >= 0 && count < 5; i--) {
     const msg = messages.value[i]
-    if (msg.role === 'user') {
+    if (msg && msg.role === 'user') {
       const content = (msg.content || '').toLowerCase()
       const isStuck = /(don'?t know|dunno|idk|not sure|unsure|cannot|can'?t|confused|stuck|help|no idea)/i.test(content) || content.length < 10
       if (isStuck) {
@@ -1686,11 +2305,18 @@ onMounted(async () => {
     if (route.query.startTopic && route.query.fromDiagnostic === 'true') {
       const topicId = route.query.startTopic as string
       
+      // Show loading state immediately for better UX
+      isLoadingFromDiagnostic.value = true
+      
       // Wait a brief moment for the UI to settle
       await nextTick()
       setTimeout(() => {
         handleTopicSelect(topicId, true)
-      }, 500)
+        // Clear loading state after topic selection initiates
+        setTimeout(() => {
+          isLoadingFromDiagnostic.value = false
+        }, 1000)
+      }, 300) // Reduced from 500ms to 300ms for snappier feel
     }
   }
 })
@@ -1715,6 +2341,8 @@ onUnmounted(() => {
   if (kgHoverTimeout) {
     clearTimeout(kgHoverTimeout)
   }
+  // Cleanup voice interface
+  cleanupVoice()
 })
 </script>
 

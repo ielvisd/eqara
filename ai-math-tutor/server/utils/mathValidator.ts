@@ -55,19 +55,32 @@ export function validateMath(message: string, previousContext?: string[], conver
   }
   
   // Multiple patterns to catch arithmetic questions
-  // Pattern 1: "what is 8 - 3?" or "what is 8 - 3"
-  // Pattern 2: LaTeX format: "\( 8 - 3 \)" or "$8 - 3$"
-  // Pattern 3: "calculate 8 - 3" or "compute 8 - 3"
-  // Pattern 4: "8 - 3 equals?" or "8 - 3 = ?"
+  // Handle multi-line formatting like "7\n+\n5" by normalizing whitespace first
+  // Also handle LaTeX formatting like "\( 7 + 5 \\)" or display math "\[ 7 + 5 \]"
+  const normalizedContext = contextStr.replace(/\s+/g, ' ').trim()
+  
+  // Remove LaTeX markers but keep the content for pattern matching
+  const contextWithoutLatex = normalizedContext
+    .replace(/\\[\(\[]/g, '')
+    .replace(/\\?[\)\]]/g, '')
+    .replace(/\$\$/g, '')
+    .replace(/\$/g, '')
+  
   const arithmeticPatterns = [
-    /(?:what is|what does|calculate|compute)\s+(?:\\?\(?\$?)?(\d+)\s*([+\-×*÷/])\s*(\d+)(?:\)?\$?)?/i,
-    /\\?\(?\$?\s*(\d+)\s*([+\-×*÷/])\s*(\d+)\s*\)?\$?\s*(?:equals?|what|for me)/i,
+    // Pattern 1: "what is 8 - 3?" or "what is 7+5?" (works with or without LaTeX)
+    /(?:what is|what's|what does|calculate|compute)\s+(\d+)\s*([+\-×*÷/])\s*(\d+)/i,
+    // Pattern 2: LaTeX format: "\( 8 - 3 \\)" or "\[ 7 + 5 \]" (already normalized)
+    /(\d+)\s*([+\-×*÷/])\s*(\d+)\s*(?:equals?|what|for me|\?)/i,
+    // Pattern 3: "8 - 3 = ?" format
     /(\d+)\s*([+\-×*÷/])\s*(\d+)\s*[=\?]/i
   ]
   
   let arithmeticQuestionMatch = null
   for (const pattern of arithmeticPatterns) {
-    arithmeticQuestionMatch = contextStr.match(pattern)
+    // Try normalized context (handles multi-line), context without LaTeX, then original
+    arithmeticQuestionMatch = normalizedContext.match(pattern) || 
+                              contextWithoutLatex.match(pattern) || 
+                              contextStr.match(pattern)
     if (arithmeticQuestionMatch) break
   }
   
@@ -268,7 +281,7 @@ export function formatValidationForLLM(validation: MathValidationResult): string
   }
 
   if (validation.isCorrect) {
-    return `[STUDENT MATH CHECK: Student correctly calculated ${validation.operation} = ${validation.correctAnswer}. Acknowledge and continue to next step.]`
+    return `🚨 CRITICAL VALIDATION RESULT 🚨\n\n[STUDENT MATH CHECK: Student correctly calculated ${validation.operation} = ${validation.correctAnswer}. This is CORRECT.\n\nYOU MUST:\n- Explicitly confirm they are correct: "Yes, that's correct!" or "Exactly right!" or "Perfect!"\n- Praise them: "Great job!" or "Well done!"\n- Acknowledge the correct answer: "Yes, ${validation.operation} = ${validation.correctAnswer}"\n- Move to the next step or celebrate completion\n- DO NOT ask them to try again or explore further - they got it right!\n- Award XP and congratulate them]\n\nDO NOT ask them to recalculate or try again - they already have the correct answer!`
   } else {
     return `[STUDENT MATH CHECK: Student said ${validation.operation} = ${validation.studentAnswer}, but the correct answer is ${validation.correctAnswer}. DO NOT confirm their wrong answer. Gently guide them to discover the error using Socratic questioning. Ask them to verify: "${validation.question}" and continue guiding until they get it right.]`
   }

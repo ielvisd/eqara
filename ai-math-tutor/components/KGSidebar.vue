@@ -192,7 +192,7 @@ defineExpose({ refreshAll })
     <template #body>
       <div class="h-full flex flex-col">
         <!-- Tabs -->
-        <UTabs :items="tabs" variant="link" :unmount-on-hide="false" class="w-full flex-1 flex flex-col min-h-0" :ui="{ root: 'flex flex-col h-full', content: 'flex-1 min-h-0 overflow-hidden' }">
+        <UTabs :items="tabs" variant="link" :unmount-on-hide="false" class="w-full flex-1 flex flex-col min-h-0" :ui="{ root: 'flex flex-col h-full overflow-hidden', content: 'flex-1 min-h-0 flex flex-col overflow-hidden' }">
           <template #item="{ item }">
             <div class="flex items-center gap-2 whitespace-nowrap">
               <UIcon :name="item.icon" class="size-4 flex-shrink-0" />
@@ -202,7 +202,7 @@ defineExpose({ refreshAll })
 
           <!-- Graph View -->
           <template #graph>
-            <div class="flex-1 overflow-hidden min-h-0" style="height: 100%;">
+            <div class="flex-1 min-h-0">
               <KnowledgeGraphFlow
                 ref="graphFlowRef"
                 :user-id="userId"
@@ -214,7 +214,7 @@ defineExpose({ refreshAll })
 
           <!-- Tree View -->
           <template #tree>
-            <div class="flex-1 overflow-hidden min-h-0" style="height: 100%;">
+            <div class="flex-1 min-h-0">
               <KnowledgeGraphTree
                 ref="treeRef"
                 :user-id="userId"
@@ -226,7 +226,7 @@ defineExpose({ refreshAll })
 
           <!-- Progress Dashboard -->
           <template #progress>
-            <div class="flex-1 overflow-hidden min-h-0" style="height: 100%;">
+            <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style="overscroll-behavior: contain;">
               <MasteryDashboard
                 ref="dashboardRef"
                 :user-id="userId"

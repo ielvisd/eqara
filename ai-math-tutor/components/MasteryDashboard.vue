@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useMasteryDashboardCache } from '../../composables/useMasteryDashboardCache'
+
 const props = defineProps<{
   userId?: string
   sessionId?: string
@@ -12,13 +14,56 @@ const kg = useKnowledgeGraph()
 const mastery = useMastery()
 const kgViz = useKGVisualization()
 
-const loading = ref(true)
-const domainMastery = ref<any[]>([])
-const frontierTopics = ref<any[]>([])
-const recentTopics = ref<any[]>([])
+const { ensureEntry } = useMasteryDashboardCache()
+
+const cacheKey = computed(() => {
+  if (props.userId) {
+    return `user:${props.userId}`
+  }
+  if (props.sessionId) {
+    return `session:${props.sessionId}`
+  }
+  return 'anonymous'
+})
+
+const cacheEntry = computed(() => ensureEntry(cacheKey.value))
+
+const loading = computed({
+  get: () => cacheEntry.value.loading,
+  set: (value: boolean) => {
+    cacheEntry.value.loading = value
+  }
+})
+
+const domainMastery = computed<any[]>({
+  get: () => cacheEntry.value.domainMastery,
+  set: (value: any[]) => {
+    cacheEntry.value.domainMastery = value
+  }
+})
+
+const frontierTopics = computed<any[]>({
+  get: () => cacheEntry.value.frontierTopics,
+  set: (value: any[]) => {
+    cacheEntry.value.frontierTopics = value
+  }
+})
+
+const recentTopics = computed<any[]>({
+  get: () => cacheEntry.value.recentTopics,
+  set: (value: any[]) => {
+    cacheEntry.value.recentTopics = value
+  }
+})
 
 // Load mastery data
-const loadMasteryData = async () => {
+const loadMasteryData = async (force = false) => {
+  const entry = cacheEntry.value
+
+  if (!force && entry.lastFetched && entry.domainMastery.length > 0) {
+    return
+  }
+
   loading.value = true
   
   try {
@@ -51,6 +96,8 @@ const loadMasteryData = async () => {
         return bDate.getTime() - aDate.getTime()
       })
       .slice(0, 10)
+
+    entry.lastFetched = Date.now()
   } catch (e) {
     console.error('Error loading mastery data:', e)
   } finally {
@@ -86,13 +133,14 @@ const formatDate = (dateString: string) => {
 }
 
 // Watch for prop changes
-watch(() => [props.userId, props.sessionId], () => {
+watch(cacheKey, () => {
   loadMasteryData()
 }, { immediate: true })
 
 // Manual refresh
 const refresh = () => {
-  loadMasteryData()
+  cacheEntry.value.lastFetched = 0
+  loadMasteryData(true)
 }
 
 // Expose refresh method
@@ -100,7 +148,7 @@ defineExpose({ refresh })
 </script>
 
 <template>
-  <div class="mastery-dashboard h-full w-full overflow-auto">
+  <div class="mastery-dashboard w-full">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center py-12">
       <div class="text-center">
@@ -110,7 +158,7 @@ defineExpose({ refresh })
     </div>
 
     <!-- Dashboard Content -->
-    <div v-else class="space-y-6 p-4">
+    <div v-else class="space-y-6">
       <!-- Domain Mastery Overview -->
       <UCard>
         <template #header>

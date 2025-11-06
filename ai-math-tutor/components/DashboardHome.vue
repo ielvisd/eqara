@@ -159,26 +159,22 @@
         <div class="mt-4 space-y-2">
           <UButton 
             variant="ghost" 
-            class="w-full text-gray-400 hover:text-pink-400"
+            class="w-full text-gray-400 hover:text-pink-400 justify-start"
             icon="i-lucide-brain"
             @click="emit('view-kg')"
           >
             View Knowledge Graph
           </UButton>
           
-          <NuxtLink 
+          <UButton 
             v-if="context.hasCompletedDiagnostic"
-            to="/diagnostic"
-            class="block"
+            variant="ghost" 
+            class="w-full text-gray-400 hover:text-pink-400 justify-start"
+            icon="i-lucide-refresh-cw"
+            @click="navigateTo('/diagnostic')"
           >
-            <UButton 
-              variant="ghost" 
-              class="w-full text-gray-400 hover:text-pink-400"
-              icon="i-lucide-refresh-cw"
-            >
-              Retake Diagnostic
-            </UButton>
-          </NuxtLink>
+            Retake Diagnostic
+          </UButton>
         </div>
       </div>
     </template>

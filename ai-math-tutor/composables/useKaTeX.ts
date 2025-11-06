@@ -104,8 +104,27 @@ export const useKaTeX = () => {
         
         // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", etc.
         // This should be a short expression (to avoid matching random numbers in text)
-        const arithmeticMatch = content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*$/)
+        const arithmeticMatch = content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*(?:=\s*\??)?\s*$/)
         if (arithmeticMatch) {
+          return i
+        }
+      }
+      
+      // Check for AI-generated arithmetic problems like "Here's an equation: 7 + 4 = ?" or "What is 7+5?"
+      if (msg.role === 'assistant') {
+        // Pattern 1: "What is 7+5?" or "What is 7 + 5?"
+        const whatIsMatch = content.match(/(?:what is|what's|calculate|compute)\s+(\d+\s*[\+\-\*\/×÷]\s*\d+)/i)
+        if (whatIsMatch) {
+          return i
+        }
+        // Pattern 2: "7 + 4 = ?" format
+        const aiArithmeticMatch = content.match(/(\d+\s*[\+\-\*\/×÷]\s*\d+\s*=\s*\?)/)
+        if (aiArithmeticMatch) {
+          return i
+        }
+        // Pattern 3: LaTeX format with arithmetic "\( 7 + 5 \\)" in question context
+        const latexArithmeticMatch = content.match(/\\[\(\[]\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*\\?[\)\]]/)
+        if (latexArithmeticMatch && /what is|what's|calculate|compute|problem|practice/i.test(content)) {
           return i
         }
       }
@@ -145,10 +164,29 @@ export const useKaTeX = () => {
           return `\\( ${latexMatch[1]} \\)`
         }
         
-        // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", etc.
-        const arithmeticMatch = msg.content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*$/)
+        // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", "7 + 4 = ?", etc.
+        const arithmeticMatch = msg.content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*(?:=\s*\??)?\s*$/)
         if (arithmeticMatch) {
           return arithmeticMatch[1]
+        }
+      }
+      
+      // Check for AI-generated arithmetic problems like "Here's an equation: 7 + 4 = ?" or "What is 7+5?"
+      if (msg.role === 'assistant') {
+        // Pattern 1: "What is 7+5?" - extract the arithmetic expression
+        const whatIsMatch = msg.content.match(/(?:what is|what's|calculate|compute)\s+(\d+\s*[\+\-\*\/×÷]\s*\d+)/i)
+        if (whatIsMatch) {
+          return whatIsMatch[1]
+        }
+        // Pattern 2: "7 + 4 = ?" format
+        const aiArithmeticMatch = msg.content.match(/(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*=\s*\?/)
+        if (aiArithmeticMatch) {
+          return aiArithmeticMatch[1]
+        }
+        // Pattern 3: LaTeX format "\( 7 + 5 \\)" in question context
+        const latexMatch = msg.content.match(/\\[\(\[]\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*\\?[\)\]]/)
+        if (latexMatch && /what is|what's|calculate|compute|problem|practice/i.test(msg.content)) {
+          return latexMatch[1]
         }
       }
     }
@@ -296,6 +334,9 @@ export const useKaTeX = () => {
       })
     }
     
+    // Detect if this is an arithmetic problem (no 'x' variable) vs algebraic equation
+    const isArithmetic = originalEq && !originalEq.toLowerCase().includes('x')
+    
     // Track equation transformations through the conversation
     let currentEq = originalEq
     let lastOperation: string | null = null
@@ -304,9 +345,74 @@ export const useKaTeX = () => {
     for (let i = 0; i < currentProblemMessages.length; i++) {
       const msg = currentProblemMessages[i]
       
+      // For arithmetic problems, check for user answers that are confirmed
+      if (isArithmetic && msg.role === 'user') {
+        // Check if user provided a simple number answer
+        const answerMatch = msg.content.match(/^\s*(\d+)\s*$/)
+        if (answerMatch && originalEq) {
+          // Try to validate the answer programmatically by calculating the original equation
+          // Extract arithmetic expression from originalEq (e.g., "7+5" or "7 + 5")
+          const arithmeticMatch = originalEq.match(/(\d+)\s*([+\-×*÷/])\s*(\d+)/)
+          if (arithmeticMatch) {
+            const num1 = parseFloat(arithmeticMatch[1])
+            const operator = arithmeticMatch[2].replace(/×/, '*').replace(/÷/, '/')
+            const num2 = parseFloat(arithmeticMatch[3])
+            const studentAnswer = parseFloat(answerMatch[1])
+            
+            // Calculate correct answer
+            let correctAnswer: number | null = null
+            try {
+              if (operator === '+') correctAnswer = num1 + num2
+              else if (operator === '-') correctAnswer = num1 - num2
+              else if (operator === '*') correctAnswer = num1 * num2
+              else if (operator === '/') correctAnswer = num1 / num2
+            } catch {
+              correctAnswer = null
+            }
+            
+            // If answer is correct, add it even if AI hasn't confirmed yet
+            // (this handles cases where AI response hasn't arrived or validation detected it)
+            if (correctAnswer !== null && Math.abs(studentAnswer - correctAnswer) < 0.001) {
+              // Check if next message exists and rejects it
+              if (i + 1 < currentProblemMessages.length) {
+                const nextMsg = currentProblemMessages[i + 1]
+                if (nextMsg.role === 'assistant') {
+                  const nextContent = nextMsg.content.toLowerCase()
+                  // Only add if not explicitly rejected (be specific - don't reject on "explore" or "verify")
+                  const isRejected = /not quite|try again|almost|close but|incorrect|wrong|that'?s not right|no, that'?s not|that'?s not correct/i.test(nextContent)
+                  // If answer is programmatically correct and not explicitly rejected, add it
+                  if (!isRejected) {
+                    // Add the answer as a final step
+                    steps.push({
+                      equation: answerMatch[1],
+                      operation: null,
+                      operationSymbol: null,
+                      operationValue: null,
+                      isCorrect: true
+                    })
+                    break // Done with this problem
+                  }
+                }
+              } else {
+                // No next message yet, but answer is correct - add it anyway
+                // (this will be updated when AI responds)
+                steps.push({
+                  equation: answerMatch[1],
+                  operation: null,
+                  operationSymbol: null,
+                  operationValue: null,
+                  isCorrect: true
+                })
+                break
+              }
+            }
+          }
+        }
+      }
+      
       // Check for operation mentions - ONLY from user messages
       // AI messages might reference operations in questions, which would overwrite the correct operation
-      if (msg.role === 'user') {
+      if (msg.role === 'user' && !isArithmetic) {
         // User patterns: "subtract 2 from each side", "divide both sides by 2", "divide by 2", etc.
         const userSubtractMatch = msg.content.match(/(?:subtract|subtracting)\s+(\d+)\s+from\s+(?:each|both)\s+side/i)
         const userAddMatch = msg.content.match(/(?:add|adding)\s+(\d+)\s+to\s+(?:each|both)\s+side/i)

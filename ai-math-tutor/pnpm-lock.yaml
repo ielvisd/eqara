@@ -29,6 +29,9 @@ importers:
       katex:
         specifier: ^0.16.25
         version: 0.16.25
+      konva:
+        specifier: ^9.2.3
+        version: 9.3.22
       mathjs:
         specifier: ^15.0.0
         version: 15.0.0
@@ -38,6 +41,9 @@ importers:
       vue:
         specifier: ^3.5.22
         version: 3.5.22(typescript@5.9.3)
+      vue-konva:
+        specifier: ^3.0.2
+        version: 3.2.6(konva@9.3.22)(vue@3.5.22(typescript@5.9.3))
       vue-router:
         specifier: ^4.5.1
         version: 4.6.3(vue@3.5.22(typescript@5.9.3))
@@ -2641,6 +2647,9 @@ packages:
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
 
+  konva@9.3.22:
+    resolution: {integrity: sha512-yQI5d1bmELlD/fowuyfOp9ff+oamg26WOCkyqUyc+nczD/lhRa3EvD2MZOoc4c1293TAubW9n34fSQLgSeEgSw==}
+
   launch-editor@2.12.0:
     resolution: {integrity: sha512-giOHXoOtifjdHqUamwKq6c49GzBdLjvxrd2D+Q4V6uOHopJv7p9VJxikDsQ/CBXZbEITgUqSVHXLTG3VhPP1Dg==}
 
@@ -4032,6 +4041,13 @@ packages:
 
   vue-devtools-stub@0.1.0:
     resolution: {integrity: sha512-RutnB7X8c5hjq39NceArgXg28WZtZpGc3+J16ljMiYnFhKvd8hITxSWQSQ5bvldxMDU6gG5mkxl1MTQLXckVSQ==}
+
+  vue-konva@3.2.6:
+    resolution: {integrity: sha512-QtiM/BYHs4gyRqhg6w0lHYGONb936qD5PeGpSFFnFzTLcOaHXd3EAas2PafrWbcILdHAUNm+0j7+djJw6g6XCw==}
+    engines: {node: '>= 4.0.0', npm: '>= 3.0.0'}
+    peerDependencies:
+      konva: '>7'
+      vue: ^3
 
   vue-router@4.6.3:
     resolution: {integrity: sha512-ARBedLm9YlbvQomnmq91Os7ck6efydTSpRP3nuOKCvgJOHNrhRoJDSKtee8kcL1Vf7nz6U+PMBL+hTvR3bTVQg==}
@@ -6996,6 +7012,8 @@ snapshots:
 
   kolorist@1.8.0: {}
 
+  konva@9.3.22: {}
+
   launch-editor@2.12.0:
     dependencies:
       picocolors: 1.1.1
@@ -8598,6 +8616,11 @@ snapshots:
       vue: 3.5.22(typescript@5.9.3)
 
   vue-devtools-stub@0.1.0: {}
+
+  vue-konva@3.2.6(konva@9.3.22)(vue@3.5.22(typescript@5.9.3)):
+    dependencies:
+      konva: 9.3.22
+      vue: 3.5.22(typescript@5.9.3)
 
   vue-router@4.6.3(vue@3.5.22(typescript@5.9.3)):
     dependencies:

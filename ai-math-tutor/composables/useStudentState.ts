@@ -74,22 +74,34 @@ export const useStudentState = () => {
         console.warn('Failed to fetch due reviews:', reviewErr)
       }
 
-      // Fetch frontier topics to find current learning topic (handle errors gracefully)
-      // Frontier topics only exist after diagnostic completion, so this is our check
-      let frontierTopics: any[] = []
+      // Check if diagnostic is complete by checking for ANY mastery data
+      // A new user will have zero mastery records until they complete the diagnostic
+      let hasCompletedDiagnostic = false
+      let allMasteryData: any[] = []
       try {
-        const frontierResponse = await $fetch<any>('/api/knowledge-graph/frontier', {
+        const masteryResponse = await $fetch<any>('/api/mastery/get', {
           method: 'GET',
           query: { userId, sessionId }
         })
-        frontierTopics = frontierResponse?.frontierTopics || []
-      } catch (frontierErr) {
-        console.warn('Failed to fetch frontier topics:', frontierErr)
+        allMasteryData = masteryResponse?.mastery || []
+        hasCompletedDiagnostic = allMasteryData.length > 0
+      } catch (masteryErr) {
+        console.warn('Failed to fetch mastery data:', masteryErr)
       }
 
-      // Check if diagnostic is complete: if frontier topics exist, diagnostic was completed
-      // Alternatively, if there are any mastery records, diagnostic was completed
-      const hasCompletedDiagnostic = frontierTopics.length > 0
+      // Fetch frontier topics to find current learning topic (only if diagnostic complete)
+      let frontierTopics: any[] = []
+      if (hasCompletedDiagnostic) {
+        try {
+          const frontierResponse = await $fetch<any>('/api/knowledge-graph/frontier', {
+            method: 'GET',
+            query: { userId, sessionId }
+          })
+          frontierTopics = frontierResponse?.frontierTopics || []
+        } catch (frontierErr) {
+          console.warn('Failed to fetch frontier topics:', frontierErr)
+        }
+      }
 
       // Determine student state
       let state: StudentState = 'new'
@@ -121,21 +133,31 @@ export const useStudentState = () => {
           }
         } else {
           // All frontier topics are either not started or completed
-          state = dueReviews > 0 ? 'review-due' : 'learning'
-          const firstFrontier = frontierTopics[0]
-          if (firstFrontier) {
-            currentTopic = {
-              id: firstFrontier.id,
-              title: firstFrontier.title,
-              mastery: firstFrontier.mastery_level,
-              lessonsCompleted: 0,
-              totalLessons: 5
+          // Check if any topics have mastery > 0 (completed topics)
+          const hasCompletedTopics = frontierTopics.every((t: any) => t.mastery_level === 100)
+          
+          if (hasCompletedTopics && frontierTopics.length > 0) {
+            // All topics are completed
+            state = 'completed'
+          } else {
+            // Topics exist but none started yet - stay in 'new' state with diagnostic completed
+            // This allows the UI to show "Ready to Practice" instead of forcing "Continue Learning"
+            state = 'new'
+            const firstFrontier = frontierTopics[0]
+            if (firstFrontier) {
+              currentTopic = {
+                id: firstFrontier.id,
+                title: firstFrontier.title,
+                mastery: firstFrontier.mastery_level,
+                lessonsCompleted: 0,
+                totalLessons: 5
+              }
             }
           }
         }
       } else {
-        // No frontier topics - possibly completed all or needs diagnostic
-        state = 'completed'
+        // No frontier topics - needs diagnostic
+        state = 'new'
       }
 
       context.value = {

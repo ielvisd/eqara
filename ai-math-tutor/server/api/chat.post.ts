@@ -375,15 +375,15 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const body = await readBody(event)
   
-  const { message, chatHistory, sessionId, userId, extractedProblem } = body
+  const { message, chatHistory, sessionId, userId, extractedProblem, drawingAnalysis } = body
 
   // Prefer userId if authenticated, otherwise use sessionId
   const userIdentifier = userId || sessionId
 
-  if (!message && !extractedProblem) {
+  if (!message && !extractedProblem && !drawingAnalysis) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'No message or problem provided'
+      statusMessage: 'No message, problem, or drawing analysis provided'
     })
   }
   
@@ -412,19 +412,28 @@ export default defineEventHandler(async (event) => {
     }
 
     // Add current user message
+    // If there's drawing analysis, format it as context for the user message
+    let userMessageContent = message || extractedProblem || '📝 [Drawing submitted]'
+    
+    if (drawingAnalysis) {
+      // Keep the message simple - the analysis details go in the system prompt
+      userMessageContent = '📝 [Drawing submitted]'
+    }
+    
     conversationHistory.push({
       role: 'user',
-      content: message || extractedProblem
+      content: userMessageContent
     })
 
     // Get Knowledge Graph context
     // If current message doesn't contain a math problem, look for the original problem in conversation history
     let problemText = message || extractedProblem || ''
     
-    // If current message is just "I don't know" or similar, find the original problem from history
+    // If current message is a drawing submission or "I don't know" or similar, find the original problem from history
     const isStuckResponse = /(don'?t know|dunno|idk|not sure|unsure|cannot|can'?t|confused|stuck|help|no idea|have no idea)/i.test(problemText) || problemText.length < 10
+    const isDrawingSubmission = /\[Drawing submitted\]|drawing|📝/i.test(problemText) || !!drawingAnalysis
     
-    if (isStuckResponse && conversationHistory.length > 0) {
+    if ((isStuckResponse || isDrawingSubmission) && conversationHistory.length > 0) {
       // Look backwards through conversation for the original problem
       for (let i = conversationHistory.length - 1; i >= 0; i--) {
         const msg = conversationHistory[i]
@@ -439,6 +448,11 @@ export default defineEventHandler(async (event) => {
           }
         }
       }
+    }
+    
+    // If we have drawing analysis, use the extracted solution to help identify the problem
+    if (drawingAnalysis && drawingAnalysis.extractedSolution && problemText.length < 20) {
+      problemText = drawingAnalysis.extractedSolution
     }
     
     const kgContext = sessionId ? await getKGContext(sessionId, problemText) : null
@@ -575,6 +589,32 @@ export default defineEventHandler(async (event) => {
       ? validationContext + '\n\n'
       : 'You will receive validation results for student calculations. Follow those instructions exactly.\n\n'
 
+    // Build drawing analysis context if present
+    let drawingContextStr = ''
+    if (drawingAnalysis) {
+      drawingContextStr = `\n\nDRAWING ANALYSIS CONTEXT:
+The student has submitted a drawing of their work. Here's what the analysis found:
+- Is Correct: ${drawingAnalysis.isCorrect ? 'YES' : 'NO'}
+- Confidence: ${drawingAnalysis.confidence}%
+- Extracted Solution: ${drawingAnalysis.extractedSolution || 'Could not extract clearly'}
+- Explanation: ${drawingAnalysis.explanation || 'No explanation provided'}
+${drawingAnalysis.errors && drawingAnalysis.errors.length > 0 ? `- Errors Found: ${drawingAnalysis.errors.join(', ')}` : ''}
+${drawingAnalysis.nextSteps && drawingAnalysis.nextSteps.length > 0 ? `- Suggested Next Steps: ${drawingAnalysis.nextSteps.join(', ')}` : ''}
+
+CRITICAL: Even though you have this analysis, you MUST use Socratic questioning:
+- NEVER directly tell them what to do (e.g., "You need to subtract 3 from both sides" or "Then divide both sides by 2")
+- Instead, ask guiding questions: "What operation could you do to both sides?" "What number is being added to 2x?" "What do you think happens next?"
+- If their work is correct: Praise them specifically ("Great job subtracting 3 from both sides!"), acknowledge what they did right, then ask "What do you think the next step should be?" NOT "The next step is to divide by 2"
+- If their work has errors: Ask questions to help them discover the error themselves: "Let's check that subtraction together - what's 11 minus 3?" NOT "You made an error, you need to subtract 3 from both sides"
+- NEVER list "Next steps to try" - instead, ask them what they think should happen next
+- Use the extracted solution to understand what they wrote, but guide them through questions, not direct instructions
+- Remember: "What should we do next?" or "What operation could help us isolate x?" is better than "Divide both sides by 2"
+- Example of GOOD response: "Nice work getting to 2x = 8! 🎉 What do you think we need to do to find x now?" 
+- Example of BAD response: "Now divide both sides by 2 to get x = 4"
+
+`
+    }
+
     // Build Socratic system prompt (kid-friendly, Grok-style with KG integration)
     let systemPrompt = `You are a fun math quest guide grounded in mastery learning—like a clever sidekick who knows exactly what students need to learn next based on their Knowledge Graph position. You guide students through Knowledge Points (tiny steps) at their knowledge frontier, ensuring they master each topic before advancing.
 
@@ -588,7 +628,17 @@ ${stuckGuidanceLine}
 - Keep responses conversational and age-appropriate (8-18 years old)
 - Validate student thinking even if it's not quite right: "Nice thinking! Let's explore that further..."
 
+PROBLEM PACING:
+- When a student completes a problem correctly, CELEBRATE their success with enthusiasm and XP
+- Tell them to check out their solution in the Steps panel: "Take a look at your step-by-step solution! 👀"
+- DO NOT automatically present a new problem
+- Instead, say something like: "When you're ready for another challenge, just let me know!" or "Want to try another one?"
+- Wait for the student to explicitly ask for a new problem before presenting one
+- This gives them time to review and feel satisfied with their completed work
+
 ${kgContextString}
+
+${drawingContextStr}
 
 CRITICAL: MATH VALIDATION
 ${validationContextStr}
@@ -622,6 +672,16 @@ ${stuckTurns >= 2 && kgContext && kgContext.prerequisites && kgContext.prerequis
   * High mastery (80-100%): Challenge with complex questions, minimal hints
 - End with XP reward mention (random: +5, +10, or +15 XP)
 - Keep it under 150 words
+
+WHITEBOARD DRAWING CAPABILITY:
+- If you want to show a visual explanation, you can include drawing commands in your response
+- Format: Use JSON structure like this at the end of your message:
+  {"whiteboard": {"commands": [{"type": "draw", "tool": "line", "from": [100, 100], "to": [200, 200], "color": "#ec4899", "strokeWidth": 3}]}}
+- Available tools: "line", "circle", "rectangle", "text"
+- Colors: Use hex codes matching app theme (pink: #ec4899, purple: #a855f7, cyan: #06b6d4)
+- Text tool: {"type": "text", "content": "x = 5", "position": [100, 100], "color": "#ec4899", "fontSize": 20}
+- Only include whiteboard commands when a visual diagram would significantly help understanding
+- Keep drawing commands simple and focused on the key concept
 
 Remember: You're helping them discover the answer AND catch their own mistakes, not giving it away!`
 
@@ -664,13 +724,27 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
 
       if (grokResponse.ok) {
         const grokData = await grokResponse.json()
-        const assistantMessage = grokData.choices[0]?.message?.content || 'I apologize, but I had trouble processing that. Could you try rephrasing your question?'
+        let assistantMessage = grokData.choices[0]?.message?.content || 'I apologize, but I had trouble processing that. Could you try rephrasing your question?'
+        
+        // Extract whiteboard commands if present
+        let whiteboardCommands = null
+        try {
+          const whiteboardMatch = assistantMessage.match(/\{"whiteboard":\s*\{[^}]+\}\}/)
+          if (whiteboardMatch) {
+            const whiteboardData = JSON.parse(whiteboardMatch[0])
+            whiteboardCommands = whiteboardData.whiteboard
+            // Remove whiteboard JSON from message
+            assistantMessage = assistantMessage.replace(/\{"whiteboard":\s*\{[^}]+\}\}/, '').trim()
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
         
         // Extract XP amount from response (look for +5, +10, +15 patterns)
         const xpMatch = assistantMessage.match(/\+\s*(\d+)\s*XP/i)
         const xpAmount = xpMatch ? parseInt(xpMatch[1]) : 10 // Default to 10 if not found
         
-        return {
+        const response: any = {
           success: true,
           message: assistantMessage,
           xpReward: xpAmount,
@@ -678,6 +752,12 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
           sessionId: sessionId,
           timestamp: new Date().toISOString()
         }
+        
+        if (whiteboardCommands) {
+          response.whiteboard = whiteboardCommands
+        }
+        
+        return response
       }
     }
 
@@ -699,13 +779,27 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
 
       if (openaiResponse.ok) {
         const openaiData = await openaiResponse.json()
-        const assistantMessage = openaiData.choices[0]?.message?.content || 'I apologize, but I had trouble processing that. Could you try rephrasing your question?'
+        let assistantMessage = openaiData.choices[0]?.message?.content || 'I apologize, but I had trouble processing that. Could you try rephrasing your question?'
+        
+        // Extract whiteboard commands if present
+        let whiteboardCommands = null
+        try {
+          const whiteboardMatch = assistantMessage.match(/\{"whiteboard":\s*\{[^}]+\}\}/)
+          if (whiteboardMatch) {
+            const whiteboardData = JSON.parse(whiteboardMatch[0])
+            whiteboardCommands = whiteboardData.whiteboard
+            // Remove whiteboard JSON from message
+            assistantMessage = assistantMessage.replace(/\{"whiteboard":\s*\{[^}]+\}\}/, '').trim()
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
         
         // Extract XP amount from response
         const xpMatch = assistantMessage.match(/\+\s*(\d+)\s*XP/i)
         const xpAmount = xpMatch ? parseInt(xpMatch[1]) : 10
         
-        return {
+        const response: any = {
           success: true,
           message: assistantMessage,
           xpReward: xpAmount,
@@ -713,6 +807,12 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
           sessionId: sessionId,
           timestamp: new Date().toISOString()
         }
+        
+        if (whiteboardCommands) {
+          response.whiteboard = whiteboardCommands
+        }
+        
+        return response
       }
     }
 
