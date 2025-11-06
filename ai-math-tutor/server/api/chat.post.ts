@@ -718,11 +718,19 @@ GUIDANCE PATTERNS:
 - NEVER use vague counting like "8, 7, 6... what comes after 6?" (too ambiguous!)
 - NEVER give the answer directly - always guide them to discover it
 
+🚨 CRITICAL: WHEN STUDENT PROVIDES COMPLETE STEP:
+- If student says both the operation AND resulting equation (e.g., "-3 both sides to get 2x = 8"):
+  * This is a COMPLETE answer to the current step
+  * DO NOT ask more questions about THIS step (they already completed it!)
+  * IMMEDIATELY move to guiding them toward the NEXT mathematical operation
+  * Example: "Exactly right! Now you have 2x = 8. What can we do next to find x?"
+  * DO NOT say things like "But remember, what happens when..." (they already know!)
+
 RESPONSE FORMAT:
 - Start with encouragement or acknowledgment
 - If error detected: Gently question the calculation step (don't state it's wrong directly)
 - Ask 1-2 open-ended questions to guide them to discover the error
-- If correct: Ask next step questions
+- If correct AND complete: Confirm it, then IMMEDIATELY guide to the NEXT operation (not more questions about current step)
 ${hintGuidanceLine}
 ${stuckTurns >= 2 && kgContext && kgContext.prerequisites && kgContext.prerequisites.length > 0 ? `\n🚨 CRITICAL REMINDER: Student has been stuck for ${stuckTurns} turns. You MUST mention at least one prerequisite topic by name in your response. Look at the KG context above for the specific prerequisite topics to reference. Example: "Remember our foundation with [PREREQUISITE TOPIC NAME]? That helps us here..."\n` : ''}
 - ADAPTIVE DIFFICULTY: Adjust your questioning based on mastery level:

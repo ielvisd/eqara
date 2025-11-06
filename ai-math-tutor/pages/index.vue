@@ -619,6 +619,7 @@
               <template #progress>
                 <div class="flex-1 h-full min-h-0 overflow-y-auto overflow-x-hidden p-4" style="overscroll-behavior: contain;">
                   <MasteryDashboard
+                    ref="masteryDashboardRef"
                     :user-id="user?.id"
                     :session-id="sessionId"
                   />
@@ -936,6 +937,8 @@ const { renderMath, extractCurrentEquation, extractCurrentStep, extractLastOpera
 // Whiteboard state
 const whiteboardState = useWhiteboard()
 const whiteboardRef = ref<any>(null)
+// Mastery Dashboard ref
+const masteryDashboardRef = ref<any>(null)
 // Initialize Whiteboard tab as default - must match a tab's slot value
 const activeSidebarTab = ref('whiteboard')
 const hasSeenWhiteboardHint = ref(false)
@@ -1161,6 +1164,10 @@ const finalSolution = computed(() => {
   if (allSteps.value.length === 0) return null
   const lastStep = allSteps.value[allSteps.value.length - 1]
   if (!lastStep) return null
+  
+  // Only extract solution if this is actually a final solution (not an intermediate like "2x = 8")
+  if (!isFinalSolution(lastStep.equation)) return null
+  
   const match = lastStep.equation.match(/x\s*=\s*(\d+)/i)
   return match && match[1] ? match[1] : null
 })
@@ -1638,6 +1645,10 @@ const handleWhiteboardSubmit = async (canvasImageData: string) => {
     await saveMessage(assistantMessage, sessionId.value)
     if (assistantMessage.xpReward) {
       await addXP(assistantMessage.xpReward)
+      // Refresh mastery dashboard to show updated progress
+      if (masteryDashboardRef.value?.refresh) {
+        masteryDashboardRef.value.refresh()
+      }
     }
 
     // Handle whiteboard commands if present
@@ -1789,6 +1800,10 @@ const processText = async () => {
     await saveMessage(assistantMessage, sessionId.value)
     if (assistantMessage.xpReward) {
       await addXP(assistantMessage.xpReward)
+      // Refresh mastery dashboard to show updated progress
+      if (masteryDashboardRef.value?.refresh) {
+        masteryDashboardRef.value.refresh()
+      }
     }
 
     // Handle whiteboard commands if present

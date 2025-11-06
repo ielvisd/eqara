@@ -427,15 +427,22 @@ export const useKaTeX = () => {
         // Check user messages for explicit operation descriptions
         if (msg.role === 'user') {
           // User patterns: "subtract 2 from each side", "divide both sides by 2", "divide by 2", etc.
+          // Also handle "to get" patterns: "-3 both sides to get 2x=8"
           const userSubtractMatch = msg.content.match(/(?:subtract|subtracting)\s+(\d+)\s+from\s+(?:each|both)\s+side/i) ||
-                                    msg.content.match(/^-\s*(\d+)\s+from\s+both\s+sides/i) // "-3 from both sides"
-          const userAddMatch = msg.content.match(/(?:add|adding)\s+(\d+)\s+to\s+(?:each|both)\s+side/i)
+                                    msg.content.match(/^-\s*(\d+)\s+(?:from\s+)?both\s+sides/i) || // "-3 both sides" or "-3 from both sides"
+                                    msg.content.match(/-\s*(\d+)\s+(?:from\s+)?both\s+sides\s+to\s+get/i) // "-3 both sides to get" or "-3 from both sides to get"
+          const userAddMatch = msg.content.match(/(?:add|adding)\s+(\d+)\s+to\s+(?:each|both)\s+side/i) ||
+                               msg.content.match(/^\+\s*(\d+)\s+(?:to\s+)?both\s+sides/i) || // "+3 both sides" or "+3 to both sides"
+                               msg.content.match(/\+\s*(\d+)\s+(?:to\s+)?both\s+sides\s+to\s+get/i) // "+3 both sides to get"
           // Try full pattern first, then simpler pattern
-          const userDivideMatchFull = msg.content.match(/(?:divide|dividing)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+          const userDivideMatchFull = msg.content.match(/(?:divide|dividing)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i) ||
+                                      msg.content.match(/÷\s*(\d+)\s+(?:from\s+)?both\s+sides\s+to\s+get/i) || // "÷2 both sides to get"
+                                      msg.content.match(/divide\s+(?:by\s+)?(\d+)\s+to\s+get/i) // "divide by 2 to get" or "divide 2 to get"
           const userDivideMatchSimple = msg.content.match(/(?:divide|dividing)\s+by\s+(\d+)/i) ||
                                        msg.content.match(/(?:divide|dividing)\s+(\d+)/i) // "divide 2" or "dividing 2"
           const userDivideMatch = userDivideMatchFull || userDivideMatchSimple
-          const userMultiplyMatch = msg.content.match(/(?:multiply|multiplying)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i)
+          const userMultiplyMatch = msg.content.match(/(?:multiply|multiplying)\s+(?:both\s+sides?\s+by|each\s+side\s+by)\s+(\d+)/i) ||
+                                   msg.content.match(/×\s*(\d+)\s+(?:to\s+)?both\s+sides\s+to\s+get/i) // "×2 both sides to get"
           
           if (userAddMatch) {
             const value = userAddMatch[1]
@@ -649,16 +656,16 @@ export const useKaTeX = () => {
         }
       }
       
-      // Also check user messages for correct answers (when AI confirms them)
-      // This helps catch cases where student provides the correct equation
+      // IMPORTANT: Check user messages with "to get" pattern FIRST, before AI processing
+      // This prevents the AI confirmation from consuming the operation before we can attach it
       // Handle when user provides both operation and equation in one message
-      if (msg.role === 'user') {
+      if (msg.role === 'user' && i > 0) {
         // Check if user message contains both operation and equation with "to get" pattern
-        // Example: "-3 from both sides to get 2x=8"
+        // Example: "-3 from both sides to get 2x=8" or "subtract 7 from both sides to get 3x = 15"
         const hasToGetPattern = msg.content.toLowerCase().includes('to get')
         const userEqMatch = msg.content.match(/([\d]*x\s*=\s*\d+)/i)
         
-        if (hasToGetPattern && userEqMatch && userEqMatch[1] !== currentEq && lastOperation) {
+        if (hasToGetPattern && userEqMatch && userEqMatch[1] !== currentEq) {
           // User provided both operation and equation in one message
           // Check if AI's next response is positive (not rejecting it)
           const nextMsg = i + 1 < currentProblemMessages.length ? currentProblemMessages[i + 1] : null
@@ -677,10 +684,11 @@ export const useKaTeX = () => {
                               nextContent.includes('try again')
             
             // If not rejected, accept it (even if AI asks for verification)
+            // Use lastOperation if it's set, otherwise this step won't have an operation label
             if (!isRejected) {
               steps.push({
                 equation: userEqMatch[1],
-                operation: lastOperation,
+                operation: lastOperation,  // This should be set from earlier operation extraction
                 operationSymbol: lastOperation?.match(/^([+\-×÷])/)?.[1] || null,
                 operationValue: lastOperation ? parseFloat(lastOperation.match(/(\d+)/)?.[1] || '0') : null,
                 isCorrect: true
