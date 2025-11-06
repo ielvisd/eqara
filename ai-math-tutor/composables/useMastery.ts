@@ -86,9 +86,17 @@ export const useMastery = () => {
       const { data, error } = await query
 
       if (error) throw error
+      console.log('[useMastery] getAllMastery returned:', data?.length || 0, 'records for', userId ? `user: ${userId}` : `session: ${sessionId}`)
+      if (data && data.length > 0) {
+        console.log('[useMastery] Sample record:', {
+          topicName: data[0]?.topic?.name,
+          masteryLevel: data[0]?.mastery_level,
+          lastPracticed: data[0]?.last_practiced
+        })
+      }
       return data || []
     } catch (error) {
-      console.error('Error fetching all mastery:', error)
+      console.error('[useMastery] Error fetching all mastery:', error)
       return []
     }
   }

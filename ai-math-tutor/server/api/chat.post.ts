@@ -309,8 +309,17 @@ async function updateMasteryOnCompletion(
     const increment = 5 // Small increment per correct problem
     const newLevel = Math.min(100, currentLevel + increment)
     
+    console.log('[Mastery] Upserting:', {
+      topicId,
+      sessionId,
+      userId: userId || 'none',
+      newLevel,
+      currentLevel
+    })
+    
     // Update mastery with last_practiced timestamp
-    await supabase
+    // NOTE: The unique constraint is (user_id, session_id, topic_id) - must include all three
+    const { data: upsertData, error: upsertError } = await supabase
       .from('student_mastery')
       .upsert({
         user_id: userId || null,
@@ -320,12 +329,30 @@ async function updateMasteryOnCompletion(
         last_practiced: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, {
-        onConflict: userId ? 'user_id,topic_id' : 'session_id,topic_id'
+        onConflict: 'user_id,session_id,topic_id'
       })
+      .select()
+    
+    if (upsertError) {
+      console.error('[Mastery] Upsert ERROR:', {
+        message: upsertError.message,
+        code: upsertError.code,
+        details: upsertError.details,
+        hint: upsertError.hint
+      })
+      throw upsertError
+    }
     
     console.log(`[Mastery] Updated topic ${topicId}: ${currentLevel}% → ${newLevel}%`)
+    console.log('[Mastery] Upsert completed for topic', topicId, 'Data returned:', upsertData)
   } catch (error) {
-    console.error('Error updating mastery on completion:', error)
+    console.error('[Mastery] Error updating mastery:', error)
+    // Log full error details
+    console.error('[Mastery] Error details:', {
+      message: error.message,
+      code: error.code,
+      hint: error.hint
+    })
     // Don't throw - mastery update failure shouldn't break chat
   }
 }
@@ -417,6 +444,12 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   
   const { message, chatHistory, sessionId, userId, extractedProblem, drawingAnalysis } = body
+
+  console.log('[Chat API] Request received with:', {
+    userId: userId || 'none',
+    sessionId: sessionId || 'none',
+    messagePreview: (message || extractedProblem || 'drawing').substring(0, 50)
+  })
 
   // Prefer userId if authenticated, otherwise use sessionId
   const userIdentifier = userId || sessionId
@@ -825,7 +858,42 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
         }
         
         // Update mastery if problem was completed correctly
-        if (mathValidation.isCorrect && kgContext?.currentTopic && sessionId) {
+        // Check both math validation AND LLM response for completion indicators
+        const completionIndicators = [
+          /correct\!?\s*🎉/i,
+          /excellent\!?\s*🌟/i,
+          /you solved it/i,
+          /solution.*is correct/i,
+          /perfect\!?\s*✅/i,
+          /that'?s right\!?/i,
+          /exactly right\!?/i,
+          /great job\!?.*solved/i,
+          /well done\!?.*correct/i,
+          /you nailed it\!?/i,
+          /nailed it\!?\s*🎉/i,
+          /is the solution\!?/i,
+          /amazing job/i,
+          /done an amazing job/i,
+          /fantastic (work|job)\!?/i,
+          /you'?ve found (that|the)/i
+        ]
+        const llmIndicatesCompletion = completionIndicators.some(pattern => 
+          pattern.test(assistantMessage)
+        )
+        
+        // Enhanced debugging
+        console.log('[Mastery Debug - Grok]', {
+          mathValidationCorrect: mathValidation.isCorrect,
+          llmIndicatesCompletion,
+          hasCurrentTopic: !!kgContext?.currentTopic,
+          currentTopicName: kgContext?.currentTopic?.name || 'none',
+          sessionId: sessionId || 'none',
+          userId: userId || 'none',
+          assistantMessagePreview: assistantMessage.substring(0, 100),
+          willUpdateMastery: (mathValidation.isCorrect || llmIndicatesCompletion) && !!kgContext?.currentTopic && !!sessionId
+        })
+        
+        if ((mathValidation.isCorrect || llmIndicatesCompletion) && kgContext?.currentTopic && sessionId) {
           const supabaseUrl = config.public.supabaseUrl
           const supabaseServiceKey = config.supabaseServiceKey
           
@@ -837,7 +905,31 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
               userId,
               sessionId
             )
+            console.log(`[Mastery] ✅ Updated for topic "${kgContext.currentTopic.name}" (detected: ${mathValidation.isCorrect ? 'math validation' : 'LLM completion'})`)
+            
+            // VERIFY the write succeeded
+            const { data: verifyData, error: verifyError } = await supabase
+              .from('student_mastery')
+              .select('mastery_level, last_practiced')
+              .eq('topic_id', kgContext.currentTopic.id)
+              .eq('session_id', sessionId)
+              .is('user_id', null)
+              .maybeSingle()
+            
+            console.log('[Mastery] Verification query:', {
+              topicId: kgContext.currentTopic.id,
+              sessionId,
+              found: !!verifyData,
+              masteryLevel: verifyData?.mastery_level,
+              error: verifyError?.message
+            })
+          } else {
+            console.warn('[Mastery] ⚠️ Supabase not configured - mastery update skipped')
           }
+        } else {
+          console.log('[Mastery] ❌ Did NOT update mastery:', {
+            reason: !kgContext?.currentTopic ? 'no topic detected' : !sessionId ? 'no sessionId' : 'not completed'
+          })
         }
         
         return response
@@ -896,7 +988,42 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
         }
         
         // Update mastery if problem was completed correctly
-        if (mathValidation.isCorrect && kgContext?.currentTopic && sessionId) {
+        // Check both math validation AND LLM response for completion indicators
+        const completionIndicators = [
+          /correct\!?\s*🎉/i,
+          /excellent\!?\s*🌟/i,
+          /you solved it/i,
+          /solution.*is correct/i,
+          /perfect\!?\s*✅/i,
+          /that'?s right\!?/i,
+          /exactly right\!?/i,
+          /great job\!?.*solved/i,
+          /well done\!?.*correct/i,
+          /you nailed it\!?/i,
+          /nailed it\!?\s*🎉/i,
+          /is the solution\!?/i,
+          /amazing job/i,
+          /done an amazing job/i,
+          /fantastic (work|job)\!?/i,
+          /you'?ve found (that|the)/i
+        ]
+        const llmIndicatesCompletion = completionIndicators.some(pattern => 
+          pattern.test(assistantMessage)
+        )
+        
+        // Enhanced debugging
+        console.log('[Mastery Debug - OpenAI]', {
+          mathValidationCorrect: mathValidation.isCorrect,
+          llmIndicatesCompletion,
+          hasCurrentTopic: !!kgContext?.currentTopic,
+          currentTopicName: kgContext?.currentTopic?.name || 'none',
+          sessionId: sessionId || 'none',
+          userId: userId || 'none',
+          assistantMessagePreview: assistantMessage.substring(0, 100),
+          willUpdateMastery: (mathValidation.isCorrect || llmIndicatesCompletion) && !!kgContext?.currentTopic && !!sessionId
+        })
+        
+        if ((mathValidation.isCorrect || llmIndicatesCompletion) && kgContext?.currentTopic && sessionId) {
           const supabaseUrl = config.public.supabaseUrl
           const supabaseServiceKey = config.supabaseServiceKey
           
@@ -908,7 +1035,31 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
               userId,
               sessionId
             )
+            console.log(`[Mastery] ✅ Updated for topic "${kgContext.currentTopic.name}" (detected: ${mathValidation.isCorrect ? 'math validation' : 'LLM completion'})`)
+            
+            // VERIFY the write succeeded
+            const { data: verifyData, error: verifyError } = await supabase
+              .from('student_mastery')
+              .select('mastery_level, last_practiced')
+              .eq('topic_id', kgContext.currentTopic.id)
+              .eq('session_id', sessionId)
+              .is('user_id', null)
+              .maybeSingle()
+            
+            console.log('[Mastery] Verification query:', {
+              topicId: kgContext.currentTopic.id,
+              sessionId,
+              found: !!verifyData,
+              masteryLevel: verifyData?.mastery_level,
+              error: verifyError?.message
+            })
+          } else {
+            console.warn('[Mastery] ⚠️ Supabase not configured - mastery update skipped')
           }
+        } else {
+          console.log('[Mastery] ❌ Did NOT update mastery:', {
+            reason: !kgContext?.currentTopic ? 'no topic detected' : !sessionId ? 'no sessionId' : 'not completed'
+          })
         }
         
         return response

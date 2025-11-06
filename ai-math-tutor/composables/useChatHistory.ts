@@ -27,10 +27,24 @@ export const useChatHistory = () => {
   // Generate anonymous session ID
   const getSessionId = (): string => {
     if (process.client) {
-      let sessionId = localStorage.getItem('math_tutor_session_id')
+      // Migration: Move from old key to new key
+      const oldSessionId = localStorage.getItem('math_tutor_session_id')
+      let sessionId = localStorage.getItem('chat_session_id')
+      
+      if (oldSessionId && !sessionId) {
+        // Migrate old session ID to new key
+        console.log('[Session] Migrating session ID from old key to new key:', oldSessionId)
+        localStorage.setItem('chat_session_id', oldSessionId)
+        localStorage.removeItem('math_tutor_session_id')
+        sessionId = oldSessionId
+      }
+      
       if (!sessionId) {
         sessionId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        localStorage.setItem('math_tutor_session_id', sessionId)
+        localStorage.setItem('chat_session_id', sessionId)
+        console.log('[Session] Created new session ID:', sessionId)
+      } else {
+        console.log('[Session] Using existing session ID:', sessionId)
       }
       return sessionId
     }
@@ -145,7 +159,7 @@ export const useChatHistory = () => {
     if (process.client) {
       // Generate a new session ID
       const newSessionId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem('math_tutor_session_id', newSessionId)
+      localStorage.setItem('chat_session_id', newSessionId)
       return newSessionId
     }
     return `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`

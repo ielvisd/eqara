@@ -23,7 +23,7 @@ export const useGamification = () => {
       if (!process.client) return null
       
       const { data: { user } } = await supabase.auth.getUser()
-      const sessionId = process.client ? localStorage.getItem('math_tutor_session_id') : null
+      const sessionId = process.client ? localStorage.getItem('chat_session_id') : null
       if (!sessionId) return null
       
       let query = supabase.from('gamestate').select('*')
@@ -65,7 +65,7 @@ export const useGamification = () => {
       if (!process.client) return
       
       const { data: { user } } = await supabase.auth.getUser()
-      const sessionId = process.client ? localStorage.getItem('math_tutor_session_id') : null
+      const sessionId = process.client ? localStorage.getItem('chat_session_id') : null
       if (!sessionId) return
       
       // Get current gamestate
@@ -164,7 +164,7 @@ export const useGamification = () => {
       // Save to Supabase
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        const sessionId = process.client ? localStorage.getItem('math_tutor_session_id') : null
+        const sessionId = process.client ? localStorage.getItem('chat_session_id') : null
         
         // Use maybeSingle() instead of single() to handle no rows gracefully
         const { data: currentState } = await supabase

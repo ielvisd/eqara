@@ -61,9 +61,11 @@ const loadMasteryData = async (force = false) => {
   const entry = cacheEntry.value
 
   if (!force && entry.lastFetched && entry.domainMastery.length > 0) {
+    console.log('[MasteryDashboard] Using cached data')
     return
   }
 
+  console.log('[MasteryDashboard] Loading mastery data...', { force, userId: props.userId, sessionId: props.sessionId })
   loading.value = true
   
   try {
@@ -82,13 +84,16 @@ const loadMasteryData = async (force = false) => {
     )
     
     domainMastery.value = domainData.filter(d => d.total > 0)
+    console.log('[MasteryDashboard] Domain mastery loaded:', domainMastery.value.length, 'domains')
     
     // Get frontier topics
     const frontier = await kgViz.getFrontierTopics(props.userId, props.sessionId)
     frontierTopics.value = frontier.slice(0, 5) // Top 5 frontier topics
+    console.log('[MasteryDashboard] Frontier topics loaded:', frontierTopics.value.length, 'topics')
     
     // Get recent topics (topics with progress)
     const allMastery = await mastery.getAllMastery(props.userId, props.sessionId)
+    console.log('[MasteryDashboard] All mastery records fetched:', allMastery.length, 'records')
     recentTopics.value = allMastery
       .sort((a, b) => {
         const aDate = new Date(a.last_practiced || 0)
@@ -96,10 +101,11 @@ const loadMasteryData = async (force = false) => {
         return bDate.getTime() - aDate.getTime()
       })
       .slice(0, 10)
+    console.log('[MasteryDashboard] Recent topics:', recentTopics.value.length, 'topics')
 
     entry.lastFetched = Date.now()
   } catch (e) {
-    console.error('Error loading mastery data:', e)
+    console.error('[MasteryDashboard] Error loading mastery data:', e)
   } finally {
     loading.value = false
   }
@@ -139,8 +145,13 @@ watch(cacheKey, () => {
 
 // Manual refresh
 const refresh = () => {
+  console.log('[MasteryDashboard] Refresh called, clearing cache...')
   cacheEntry.value.lastFetched = 0
+  cacheEntry.value.domainMastery = []
+  cacheEntry.value.frontierTopics = []
+  cacheEntry.value.recentTopics = []
   loadMasteryData(true)
+  console.log('[MasteryDashboard] Loading fresh data...')
 }
 
 // Expose refresh method

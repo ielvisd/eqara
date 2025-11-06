@@ -105,7 +105,7 @@ let masterySubscription: any = null
 onMounted(() => {
   if (process.client) {
     // Subscribe to mastery changes
-    const sessionIdValue = props.sessionId || (process.client ? localStorage.getItem('math_tutor_session_id') : null)
+    const sessionIdValue = props.sessionId || (process.client ? localStorage.getItem('chat_session_id') : null)
     
     if (sessionIdValue) {
       masterySubscription = supabase

@@ -66,153 +66,199 @@ export const useKaTeX = () => {
   const findCurrentProblemStart = (messages: Array<{role: string, content: string} | any>): number => {
     if (messages.length === 0) return 0
     
-    // Look backwards through messages to find the most recent problem start
-    // This could be a user message with an equation OR an AI message presenting a practice problem
+    // Strategy: Look through messages and score each potential problem start
+    // Prioritize: 1) "Solve" keyword, 2) Complex equations, 3) Earlier in conversation
+    let bestMatch = 0
+    let bestScore = 0
+    
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]
       const content = msg.content || ''
+      let score = 0
       
       if (msg.role === 'user') {
         // Check for learning requests that might precede an AI-generated problem
         const learningRequest = content.match(/(?:i want to learn|practice|give me a problem|can you give me)/i)
         if (learningRequest && i + 1 < messages.length && messages[i + 1].role === 'assistant') {
-          // Check if the next message (AI response) contains a problem
           const nextContent = messages[i + 1].content || ''
           if (nextContent.match(/(?:problem|equation|solve|calculate|what is)/i)) {
-            return i + 1 // Start from the AI's problem presentation
+            return i + 1
           }
         }
         
-        // Skip equations that appear in step descriptions (not new problems)
-        // Look for indicators that this is describing a step, not stating a new problem
-        // Check for phrases that indicate the equation is a result of an operation
+        // Skip equations in step descriptions
         const isStepDescription = /(?:to get|we have|now we have|so we have|which gives|resulting in|we get|gives us|(?:subtract|add|multiply|divide).*(?:from|to) both sides)/i.test(content)
+        if (isStepDescription) continue
         
-        // Check for equation patterns: "4x-2 = 10", "4x+2 = 12", "2x+7=3", etc.
-        // Pattern matches: coefficient*x +/- constant = number
-        const equationMatch = content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
-        if (equationMatch && !isStepDescription) {
-          return i
+        // HIGHEST PRIORITY: "Solve" keyword indicates original problem
+        if (/\b(?:solve|find|calculate)\b/i.test(content)) {
+          score += 100
         }
         
-        // Also match simpler forms: "4x = 10", "2x=5", etc.
-        // But skip if it's in a step description context
+        // HIGH PRIORITY: Complex equations with operations (4x+5 = 21)
+        const complexMatch = content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
+        if (complexMatch) {
+          score += 50
+        }
+        
+        // MEDIUM PRIORITY: Simple equations (4x = 16) - likely intermediate steps
         const simpleMatch = content.match(/(\d+x\s*=\s*\d+)/i)
-        if (simpleMatch && !isStepDescription) {
-          return i
+        if (simpleMatch && !complexMatch) {
+          score += 20
         }
         
-        // Look for LaTeX equations in user messages
+        // LaTeX equations
         const latexMatch = content.match(/\\[\(\[]([^\)\]]*?[+\-].*?=.*?)\\?[\)\]]/)
         if (latexMatch) {
-          return i
+          score += 40
         }
         
-        // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", etc.
-        // This should be a short expression (to avoid matching random numbers in text)
+        // Arithmetic
         const arithmeticMatch = content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*(?:=\s*\??)?\s*$/)
         if (arithmeticMatch) {
-          return i
+          score += 30
+        }
+        
+        // Prefer earlier messages (original problems come first)
+        score += (messages.length - i) * 0.5
+        
+        if (score > bestScore) {
+          bestScore = score
+          bestMatch = i
         }
       }
       
-      // Check for AI-generated arithmetic problems like "Here's an equation: 7 + 4 = ?" or "What is 7+5?"
+      // Check for AI-generated problems
       if (msg.role === 'assistant') {
-        // Pattern 1: "What is 7+5?" or "What is 7 + 5?"
         const whatIsMatch = content.match(/(?:what is|what's|calculate|compute)\s+(\d+\s*[\+\-\*\/×÷]\s*\d+)/i)
         if (whatIsMatch) {
-          return i
+          score = 40 + (messages.length - i) * 0.5
         }
-        // Pattern 2: "7 + 4 = ?" format
+        
         const aiArithmeticMatch = content.match(/(\d+\s*[\+\-\*\/×÷]\s*\d+\s*=\s*\?)/)
         if (aiArithmeticMatch) {
-          return i
+          score = 35 + (messages.length - i) * 0.5
         }
-        // Pattern 3: LaTeX format with arithmetic "\( 7 + 5 \\)" in question context
+        
         const latexArithmeticMatch = content.match(/\\[\(\[]\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*\\?[\)\]]/)
         if (latexArithmeticMatch && /what is|what's|calculate|compute|problem|practice/i.test(content)) {
-          return i
+          score = 35 + (messages.length - i) * 0.5
+        }
+        
+        if (score > bestScore) {
+          bestScore = score
+          bestMatch = i
         }
       }
     }
     
-    // Fallback: if no equation found, return 0 (show all messages)
-    return 0
+    return bestMatch
   }
 
   // Extract current equation from messages (should be the ORIGINAL problem)
   const extractCurrentEquation = (messages: Array<{role: string, content: string} | any>): string | null => {
-    // First, look for the FIRST user message with an equation (original problem)
-    // This is typically the first math problem stated
-    for (let i = 0; i < Math.min(messages.length, 5); i++) {
+    // Use scoring to find the ORIGINAL problem (not intermediate steps)
+    // Prioritize: 1) "Solve" keyword, 2) Complex equations, 3) Earlier in conversation
+    let bestEquation: string | null = null
+    let bestScore = 0
+    
+    for (let i = 0; i < Math.min(messages.length, 10); i++) {
       const msg = messages[i]
+      const content = msg.content || ''
+      let score = 0
+      let equation: string | null = null
       
-      // Prioritize user messages for the original problem
       if (msg.role === 'user') {
-        // Skip equations that appear in step descriptions (not original problems)
-        // Look for indicators that this is describing a step, not stating a new problem
-        // Check for phrases that indicate the equation is a result of an operation
-        const isStepDescription = /(?:to get|we have|now we have|so we have|which gives|resulting in|we get|gives us|(?:subtract|add|multiply|divide).*(?:from|to) both sides)/i.test(msg.content)
+        // Skip step descriptions
+        const isStepDescription = /(?:to get|we have|now we have|so we have|which gives|resulting in|we get|gives us|(?:subtract|add|multiply|divide).*(?:from|to) both sides)/i.test(content)
+        if (isStepDescription) continue
         
-        // Look for equation patterns: "4x-2 = 10", "4x+2 = 12", etc.
-        // Pattern matches: coefficient*x +/- constant = number
-        const equationMatch = msg.content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
-        if (equationMatch && !isStepDescription) {
-          return equationMatch[1]
+        // HIGHEST PRIORITY: "Solve" keyword
+        if (/\b(?:solve|find|calculate)\b/i.test(content)) {
+          score += 100
         }
         
-        // Also match simpler forms: "4x = 10" if it's in the first message
-        // But only if it's not a step description
-        if (i === 0 && !isStepDescription) {
-          const simpleMatch = msg.content.match(/(\d+x\s*=\s*\d+)/i)
+        // HIGH PRIORITY: Complex equations (4x+5 = 21)
+        const complexMatch = content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
+        if (complexMatch) {
+          score += 50
+          equation = complexMatch[1]
+        }
+        
+        // MEDIUM PRIORITY: Simple equations (4x = 16) - likely intermediate
+        if (!equation) {
+          const simpleMatch = content.match(/(\d+x\s*=\s*\d+)/i)
           if (simpleMatch) {
-            return simpleMatch[1]
+            score += 20
+            equation = simpleMatch[1]
           }
         }
         
-        // Look for LaTeX equations in user messages
-        const latexMatch = msg.content.match(/\\[\(\[]([^\)\]]*?[+\-].*?=.*?)\\?[\)\]]/)
-        if (latexMatch) {
-          return `\\( ${latexMatch[1]} \\)`
+        // LaTeX equations
+        if (!equation) {
+          const latexMatch = content.match(/\\[\(\[]([^\)\]]*?[+\-].*?=.*?)\\?[\)\]]/)
+          if (latexMatch) {
+            score += 40
+            equation = `\\( ${latexMatch[1]} \\)`
+          }
         }
         
-        // Match basic arithmetic: "8-3", "15+7", "12*4", "20/5", "7 + 4 = ?", etc.
-        const arithmeticMatch = msg.content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*(?:=\s*\??)?\s*$/)
-        if (arithmeticMatch) {
-          return arithmeticMatch[1]
+        // Arithmetic
+        if (!equation) {
+          const arithmeticMatch = content.match(/^\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*(?:=\s*\??)?\s*$/)
+          if (arithmeticMatch) {
+            score += 30
+            equation = arithmeticMatch[1]
+          }
+        }
+        
+        // Prefer earlier messages
+        score += (10 - i) * 2
+      }
+      
+      // AI-generated problems
+      if (msg.role === 'assistant') {
+        const whatIsMatch = content.match(/(?:what is|what's|calculate|compute)\s+(\d+\s*[\+\-\*\/×÷]\s*\d+)/i)
+        if (whatIsMatch) {
+          score = 40 + (10 - i) * 2
+          equation = whatIsMatch[1]
+        }
+        
+        if (!equation) {
+          const aiArithmeticMatch = content.match(/(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*=\s*\?/)
+          if (aiArithmeticMatch) {
+            score = 35 + (10 - i) * 2
+            equation = aiArithmeticMatch[1]
+          }
+        }
+        
+        if (!equation) {
+          const latexMatch = content.match(/\\[\(\[]\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*\\?[\)\]]/)
+          if (latexMatch && /what is|what's|calculate|compute|problem|practice/i.test(content)) {
+            score = 35 + (10 - i) * 2
+            equation = latexMatch[1]
+          }
         }
       }
       
-      // Check for AI-generated arithmetic problems like "Here's an equation: 7 + 4 = ?" or "What is 7+5?"
-      if (msg.role === 'assistant') {
-        // Pattern 1: "What is 7+5?" - extract the arithmetic expression
-        const whatIsMatch = msg.content.match(/(?:what is|what's|calculate|compute)\s+(\d+\s*[\+\-\*\/×÷]\s*\d+)/i)
-        if (whatIsMatch) {
-          return whatIsMatch[1]
-        }
-        // Pattern 2: "7 + 4 = ?" format
-        const aiArithmeticMatch = msg.content.match(/(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*=\s*\?/)
-        if (aiArithmeticMatch) {
-          return aiArithmeticMatch[1]
-        }
-        // Pattern 3: LaTeX format "\( 7 + 5 \\)" in question context
-        const latexMatch = msg.content.match(/\\[\(\[]\s*(\d+\s*[\+\-\*\/×÷]\s*\d+)\s*\\?[\)\]]/)
-        if (latexMatch && /what is|what's|calculate|compute|problem|practice/i.test(msg.content)) {
-          return latexMatch[1]
+      if (equation && score > bestScore) {
+        bestScore = score
+        bestEquation = equation
+      }
+    }
+    
+    // If no good match found, fallback to first complex equation
+    if (!bestEquation) {
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i]
+        const equationMatch = msg.content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
+        if (equationMatch) {
+          return equationMatch[1]
         }
       }
     }
     
-    // Fallback: look for any equation (but this shouldn't be needed if user starts with problem)
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i]
-      const equationMatch = msg.content.match(/(\d+x\s*[+\-]\s*\d+\s*=\s*\d+)/i)
-      if (equationMatch) {
-        return equationMatch[1]
-      }
-    }
-    
-    return null
+    return bestEquation
   }
 
   // Extract current step - should be the most recent COMPLETE equation state

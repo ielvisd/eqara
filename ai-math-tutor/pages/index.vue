@@ -1645,10 +1645,23 @@ const handleWhiteboardSubmit = async (canvasImageData: string) => {
     await saveMessage(assistantMessage, sessionId.value)
     if (assistantMessage.xpReward) {
       await addXP(assistantMessage.xpReward)
+      console.log('[Client] XP awarded, will refresh dashboard in 1500ms')
       // Refresh mastery dashboard to show updated progress
-      if (masteryDashboardRef.value?.refresh) {
-        masteryDashboardRef.value.refresh()
-      }
+      // Add a delay to ensure database transaction completes
+      await nextTick()
+      setTimeout(async () => {
+        console.log('[Client] Attempting to refresh mastery dashboard...', {
+          hasDashboardRef: !!masteryDashboardRef.value,
+          hasRefreshMethod: !!masteryDashboardRef.value?.refresh
+        })
+        if (masteryDashboardRef.value?.refresh) {
+          // Force refresh with fresh data
+          await masteryDashboardRef.value.refresh()
+          console.log('[Client] ✅ Dashboard refresh triggered')
+        } else {
+          console.warn('[Client] ⚠️ Dashboard ref or refresh method not available')
+        }
+      }, 1500)
     }
 
     // Handle whiteboard commands if present
@@ -1800,10 +1813,23 @@ const processText = async () => {
     await saveMessage(assistantMessage, sessionId.value)
     if (assistantMessage.xpReward) {
       await addXP(assistantMessage.xpReward)
+      console.log('[Client] XP awarded, will refresh dashboard in 1500ms')
       // Refresh mastery dashboard to show updated progress
-      if (masteryDashboardRef.value?.refresh) {
-        masteryDashboardRef.value.refresh()
-      }
+      // Add a delay to ensure database transaction completes
+      await nextTick()
+      setTimeout(async () => {
+        console.log('[Client] Attempting to refresh mastery dashboard...', {
+          hasDashboardRef: !!masteryDashboardRef.value,
+          hasRefreshMethod: !!masteryDashboardRef.value?.refresh
+        })
+        if (masteryDashboardRef.value?.refresh) {
+          // Force refresh with fresh data
+          await masteryDashboardRef.value.refresh()
+          console.log('[Client] ✅ Dashboard refresh triggered')
+        } else {
+          console.warn('[Client] ⚠️ Dashboard ref or refresh method not available')
+        }
+      }, 1500)
     }
 
     // Handle whiteboard commands if present
