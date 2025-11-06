@@ -289,6 +289,47 @@ function calculateScaffoldingLevel(masteryLevel: number | null): {
   }
 }
 
+// Update mastery when a problem is completed correctly
+async function updateMasteryOnCompletion(
+  supabase: any,
+  topicId: string,
+  userId: string | undefined,
+  sessionId: string
+): Promise<void> {
+  try {
+    // Get current mastery
+    const { data: currentMastery } = await supabase
+      .from('student_mastery')
+      .select('mastery_level')
+      .eq(userId ? 'user_id' : 'session_id', userId || sessionId)
+      .eq('topic_id', topicId)
+      .maybeSingle()
+    
+    const currentLevel = currentMastery?.mastery_level || 0
+    const increment = 5 // Small increment per correct problem
+    const newLevel = Math.min(100, currentLevel + increment)
+    
+    // Update mastery with last_practiced timestamp
+    await supabase
+      .from('student_mastery')
+      .upsert({
+        user_id: userId || null,
+        session_id: sessionId || null,
+        topic_id: topicId,
+        mastery_level: newLevel,
+        last_practiced: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: userId ? 'user_id,topic_id' : 'session_id,topic_id'
+      })
+    
+    console.log(`[Mastery] Updated topic ${topicId}: ${currentLevel}% → ${newLevel}%`)
+  } catch (error) {
+    console.error('Error updating mastery on completion:', error)
+    // Don't throw - mastery update failure shouldn't break chat
+  }
+}
+
 // Track lesson failures and detect remediation needs
 async function checkRemediationStatus(
   supabase: any,
@@ -775,6 +816,22 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
           response.whiteboard = whiteboardCommands
         }
         
+        // Update mastery if problem was completed correctly
+        if (mathValidation.isCorrect && kgContext?.currentTopic && sessionId) {
+          const supabaseUrl = config.public.supabaseUrl
+          const supabaseServiceKey = config.supabaseServiceKey
+          
+          if (supabaseUrl && supabaseServiceKey) {
+            const supabase = createClient(supabaseUrl, supabaseServiceKey)
+            await updateMasteryOnCompletion(
+              supabase,
+              kgContext.currentTopic.id,
+              userId,
+              sessionId
+            )
+          }
+        }
+        
         return response
       }
     }
@@ -828,6 +885,22 @@ Remember: You're helping them discover the answer AND catch their own mistakes, 
         
         if (whiteboardCommands) {
           response.whiteboard = whiteboardCommands
+        }
+        
+        // Update mastery if problem was completed correctly
+        if (mathValidation.isCorrect && kgContext?.currentTopic && sessionId) {
+          const supabaseUrl = config.public.supabaseUrl
+          const supabaseServiceKey = config.supabaseServiceKey
+          
+          if (supabaseUrl && supabaseServiceKey) {
+            const supabase = createClient(supabaseUrl, supabaseServiceKey)
+            await updateMasteryOnCompletion(
+              supabase,
+              kgContext.currentTopic.id,
+              userId,
+              sessionId
+            )
+          }
         }
         
         return response
