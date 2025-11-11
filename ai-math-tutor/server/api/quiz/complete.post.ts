@@ -26,17 +26,34 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Get quiz session
-    const { data: quizData, error: quizError } = await supabase
+    // Get quiz session and verify ownership
+    let query = supabase
       .from('quiz_sessions')
       .select('*')
       .eq('id', quizId)
-      .single()
+    
+    // Verify ownership
+    if (userId) {
+      query = query.eq('user_id', userId)
+    } else if (sessionId) {
+      query = query.eq('session_id', sessionId)
+    }
+    
+    const { data: quizData, error: quizError } = await query.single()
 
     if (quizError || !quizData) {
+      console.error('Error fetching quiz session:', quizError)
       return {
         success: false,
-        error: 'Quiz session not found'
+        error: quizError?.message || 'Quiz session not found'
+      }
+    }
+
+    // Validate answers
+    if (!answers || !Array.isArray(answers) || answers.length === 0) {
+      return {
+        success: false,
+        error: 'No answers provided. Please complete the quiz before submitting.'
       }
     }
 
@@ -82,20 +99,34 @@ export default defineEventHandler(async (event) => {
       const topicAccuracy = (performance.correct / performance.total) * 100
 
       // Get current mastery
-      const { data: currentMastery } = await supabase
+      const { data: currentMastery, error: masteryFetchError } = await supabase
         .from('student_mastery')
         .select('*, topics(*)')
         .eq(userId ? 'user_id' : 'session_id', userId || sessionId)
         .eq('topic_id', topicId)
-        .single()
+        .maybeSingle()
+
+      if (masteryFetchError && masteryFetchError.code !== 'PGRST116') {
+        // PGRST116 is "not found" which is fine for new topics
+        console.error(`Error fetching mastery for topic ${topicId}:`, masteryFetchError)
+      }
 
       const oldMastery = currentMastery?.mastery_level || 0
 
-      // Calculate new mastery (weighted average with recent performance)
-      // Give more weight to recent quiz (60% quiz, 40% previous)
-      let newMastery = Math.round(topicAccuracy * 0.6 + oldMastery * 0.4)
+      // Calculate new mastery
+      let newMastery: number
       
-      // Cap at 100
+      // If quiz accuracy is very high (≥95%), set mastery to 100%
+      // This allows students to achieve mastery through excellent quiz performance
+      if (topicAccuracy >= 95) {
+        newMastery = 100
+      } else {
+        // Otherwise, use weighted average with recent performance
+        // Give more weight to recent quiz (60% quiz, 40% previous)
+        newMastery = Math.round(topicAccuracy * 0.6 + oldMastery * 0.4)
+      }
+      
+      // Cap at 100, ensure non-negative
       newMastery = Math.min(100, Math.max(0, newMastery))
 
       // Update or insert mastery record
@@ -109,18 +140,40 @@ export default defineEventHandler(async (event) => {
         updated_at: new Date().toISOString()
       }
 
+      // Use proper conflict resolution based on unique constraint
+      const conflictColumns = userId 
+        ? 'user_id,topic_id' 
+        : 'session_id,topic_id'
+      
       const { error: masteryError } = await supabase
         .from('student_mastery')
         .upsert([masteryRecord], {
-          onConflict: userId ? 'user_id,topic_id' : 'session_id,topic_id'
+          onConflict: conflictColumns
         })
 
       if (masteryError) {
         console.error('Error updating mastery:', masteryError)
+        // Continue processing other topics even if one fails
       } else {
+        // Get topic name for display
+        let topicName = 'Unknown Topic'
+        if (currentMastery?.topics?.name) {
+          topicName = currentMastery.topics.name
+        } else {
+          // Try to fetch topic name if not in mastery record
+          const { data: topicData } = await supabase
+            .from('topics')
+            .select('name')
+            .eq('id', topicId)
+            .single()
+          if (topicData?.name) {
+            topicName = topicData.name
+          }
+        }
+        
         masteryUpdates.push({
           topicId,
-          topicName: currentMastery?.topics?.name || 'Unknown Topic',
+          topicName,
           oldMastery,
           newMastery
         })

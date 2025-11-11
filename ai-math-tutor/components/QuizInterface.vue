@@ -12,7 +12,16 @@
       <!-- Quiz Setup (before starting) - Hide in review mode -->
       <UCard v-else-if="!quizStarted && !showResults && !reviewMode" class="bg-black/90 border border-pink-500/20">
         <template #header>
-          <h3 class="text-2xl font-bold text-white">Quiz Options</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-2xl font-bold text-white">Quiz Options</h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              size="sm"
+              icon="i-lucide-x"
+              @click="$emit('close')"
+            />
+          </div>
         </template>
 
         <div class="space-y-6">
@@ -123,14 +132,24 @@
       <UCard v-else-if="error" class="bg-red-500/10 border border-red-500/20">
         <div class="text-center py-8">
           <UIcon name="i-lucide-alert-circle" class="size-12 text-red-400 mx-auto mb-4" />
-          <p class="text-red-300 mb-4">{{ error }}</p>
-          <UButton
-            color="primary"
-            variant="outline"
-            @click="setupNewQuiz"
-          >
-            Try Again
-          </UButton>
+          <h3 class="text-lg font-semibold text-red-300 mb-2">Oops! Something went wrong</h3>
+          <p class="text-red-300 mb-6">{{ error }}</p>
+          <div class="flex gap-3 justify-center">
+            <UButton
+              color="primary"
+              variant="outline"
+              @click="setupNewQuiz"
+            >
+              Try Again
+            </UButton>
+            <UButton
+              color="gray"
+              variant="ghost"
+              @click="$emit('close')"
+            >
+              Close
+            </UButton>
+          </div>
         </div>
       </UCard>
     </div>
@@ -211,9 +230,22 @@ const startQuiz = async () => {
       timeLimit: isTimed.value ? 60 : undefined
     })
 
+    if (!quiz.value || !quiz.value.questions || quiz.value.questions.length === 0) {
+      throw new Error('No questions were generated for this quiz. Please try again or select different topics.')
+    }
+
     quizStarted.value = true
   } catch (err: any) {
-    error.value = err.message || 'Failed to generate quiz'
+    console.error('Error starting quiz:', err)
+    
+    // Provide user-friendly error messages
+    if (err.message?.includes('No topics available')) {
+      error.value = 'No topics available for quiz. Please complete some lessons first to practice!'
+    } else if (err.message?.includes('Session ID required')) {
+      error.value = 'Unable to start quiz. Please refresh the page and try again.'
+    } else {
+      error.value = err.message || 'Failed to generate quiz. Please try again.'
+    }
   } finally {
     loading.value = false
   }
@@ -249,17 +281,33 @@ const finishQuiz = async () => {
 
   try {
     loading.value = true
+    error.value = null
+
+    if (!answers.value || answers.value.length === 0) {
+      throw new Error('No answers submitted. Please answer at least one question.')
+    }
 
     quizResult.value = await completeQuiz(quiz.value.id, answers.value)
     
+    if (!quizResult.value) {
+      throw new Error('Failed to get quiz results. Please try again.')
+    }
+    
     // Award XP
     const xpEarned = Math.floor(quizResult.value.accuracy / 10) * 10 + 20
-    await addXP(xpEarned)
+    try {
+      await addXP(xpEarned)
+    } catch (xpError) {
+      // XP error shouldn't block showing results
+      console.warn('Failed to award XP:', xpError)
+    }
 
     showResults.value = true
     quizStarted.value = false
   } catch (err: any) {
-    error.value = err.message || 'Failed to complete quiz'
+    console.error('Error completing quiz:', err)
+    error.value = err.message || 'Failed to complete quiz. Your progress may not have been saved.'
+    // Don't hide quiz - let user see their answers
   } finally {
     loading.value = false
   }

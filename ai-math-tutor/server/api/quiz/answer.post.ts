@@ -29,16 +29,25 @@ export default defineEventHandler(async (event) => {
     }
 
     // Get quiz session from database
-    const { data: quizData, error: quizError } = await supabase
+    let query = supabase
       .from('quiz_sessions')
       .select('*')
       .eq('id', quizId)
-      .single()
+    
+    // Verify ownership
+    if (userId) {
+      query = query.eq('user_id', userId)
+    } else if (sessionId) {
+      query = query.eq('session_id', sessionId)
+    }
+    
+    const { data: quizData, error: quizError } = await query.single()
 
     if (quizError || !quizData) {
+      console.error('Error fetching quiz session:', quizError)
       return {
         success: false,
-        error: 'Quiz session not found'
+        error: quizError?.message || 'Quiz session not found'
       }
     }
 

@@ -58,31 +58,43 @@ export default defineEventHandler(async (event) => {
 
     if (masteryData.length === 0) {
       // Student hasn't practiced anything yet, get frontier topics
-      const { data: frontierData } = await supabase
-        .rpc('get_knowledge_frontier', {
-          p_user_id: userId,
-          p_session_id: sessionId
-        })
-      
-      if (frontierData && frontierData.length > 0) {
-        const frontierTopicIds = frontierData.map((t: any) => t.topic_id)
-        const { data: frontierMastery } = await supabase
-          .from('topics')
-          .select('*')
-          .in('id', frontierTopicIds.slice(0, 5))
+      try {
+        const { data: frontierData, error: frontierError } = await supabase
+          .rpc('get_knowledge_frontier', {
+            p_user_id: userId || null,
+            p_session_id: sessionId || null
+          })
         
-        masteryData = (frontierMastery || []).map((topic: any) => ({
-          topic_id: topic.id,
-          mastery_level: 0,
-          topics: topic
-        }))
+        if (frontierError) {
+          console.warn('Error getting knowledge frontier:', frontierError)
+        }
+        
+        if (frontierData && frontierData.length > 0) {
+          const frontierTopicIds = frontierData.map((t: any) => t.topic_id)
+          const { data: frontierTopics, error: topicsError } = await supabase
+            .from('topics')
+            .select('*')
+            .in('id', frontierTopicIds.slice(0, 5))
+          
+          if (topicsError) {
+            console.error('Error fetching frontier topics:', topicsError)
+          } else if (frontierTopics && frontierTopics.length > 0) {
+            masteryData = frontierTopics.map((topic: any) => ({
+              topic_id: topic.id,
+              mastery_level: 0,
+              topics: topic
+            }))
+          }
+        }
+      } catch (frontierErr) {
+        console.error('Error in frontier lookup:', frontierErr)
       }
     }
 
     if (masteryData.length === 0) {
       return {
         success: false,
-        error: 'No topics available for quiz'
+        error: 'No topics available for quiz. Please complete some lessons or take the diagnostic test first!'
       }
     }
 
@@ -93,33 +105,56 @@ export default defineEventHandler(async (event) => {
     // Shuffle topics for interleaving
     const shuffledTopics = topicsForQuiz.sort(() => Math.random() - 0.5)
     
-    for (let i = 0; i < numQuestions; i++) {
+    // Ensure we have at least one question
+    const actualNumQuestions = Math.min(numQuestions, shuffledTopics.length)
+    
+    for (let i = 0; i < actualNumQuestions; i++) {
       const topicIndex = i % shuffledTopics.length
       const mastery = shuffledTopics[topicIndex]
       const topic = mastery.topics
       
-      if (!topic) continue
+      if (!topic) {
+        console.warn(`Topic missing for mastery record: ${mastery.topic_id}`)
+        continue
+      }
       
-      // Generate question for this topic
-      const question = await generateQuizQuestion(topic, mastery.mastery_level || 0)
-      
-      questions.push({
-        id: `q${i + 1}`,
-        type: question.type,
-        question: question.question,
-        options: question.options,
-        correctAnswer: question.correctAnswer,
-        explanation: question.explanation,
-        topicId: topic.id,
-        topicName: topic.name,
-        difficulty: topic.difficulty
-      })
+      try {
+        // Generate question for this topic
+        const question = await generateQuizQuestion(topic, mastery.mastery_level || 0)
+        
+        if (!question || !question.question) {
+          console.warn(`Failed to generate question for topic: ${topic.name}`)
+          continue
+        }
+        
+        questions.push({
+          id: `q${questions.length + 1}`,
+          type: question.type,
+          question: question.question,
+          options: question.options,
+          correctAnswer: question.correctAnswer,
+          explanation: question.explanation,
+          topicId: topic.id,
+          topicName: topic.name,
+          difficulty: topic.difficulty
+        })
+      } catch (questionError) {
+        console.error(`Error generating question for topic ${topic.name}:`, questionError)
+        // Continue to next topic instead of failing entire quiz
+        continue
+      }
+    }
+    
+    // Validate we have at least one question
+    if (questions.length === 0) {
+      return {
+        success: false,
+        error: 'Unable to generate questions. Please try again or select different topics.'
+      }
     }
 
-    // Create quiz session in database
-    const quizId = `quiz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    // Create quiz session in database (let database auto-generate UUID)
     const quizSession = {
-      id: quizId,
       user_id: userId || null,
       session_id: sessionId || null,
       topics: questions.map(q => q.topicId),
@@ -132,22 +167,41 @@ export default defineEventHandler(async (event) => {
       created_at: new Date().toISOString()
     }
 
-    const { error: insertError } = await supabase
+    const { data: insertedQuiz, error: insertError } = await supabase
       .from('quiz_sessions')
       .insert([quizSession])
+      .select()
+      .single()
 
     if (insertError) {
       console.error('Error creating quiz session:', insertError)
+      
+      // Provide helpful error messages
+      if (insertError.code === '42P01') {
+        // Table doesn't exist
+        return {
+          success: false,
+          error: 'Database table not found. Please ensure the quiz_sessions table exists in your database.'
+        }
+      }
+      
       return {
         success: false,
-        error: 'Failed to create quiz session'
+        error: insertError.message || 'Failed to create quiz session. Please try again.'
+      }
+    }
+
+    if (!insertedQuiz || !insertedQuiz.id) {
+      return {
+        success: false,
+        error: 'Failed to create quiz session: No ID returned. Please try again.'
       }
     }
 
     return {
       success: true,
       quiz: {
-        id: quizId,
+        id: insertedQuiz.id,
         userId,
         sessionId,
         topics: questions.map(q => q.topicId),
